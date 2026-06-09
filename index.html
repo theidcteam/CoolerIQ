@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CoolerIQ Audit Prototype</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brandbar">
+        <img src="assets/cooleriq-logo-reversed.png" alt="CoolerIQ" />
+        <div>
+          <div class="eyebrow">Field Audit Prototype</div>
+          <h1>Know Every Door</h1>
+        </div>
+      </div>
+      <button class="ghost small" id="homeBtn">Home</button>
+    </header>
+    <main id="app"></main>
+  </div>
+
+  <template id="homeTemplate">
+    <section class="home-hero">
+      <div class="home-logo-wrap">
+        <img src="assets/cooleriq-logo-reversed.png" alt="CoolerIQ" class="home-logo" />
+      </div>
+      <nav class="home-actions" aria-label="Main navigation">
+        <button class="home-tile primary" data-action="newAudit"><span class="tile-icon">＋</span><span>Start New Audit</span></button>
+        <button class="home-tile" data-action="continueAudit"><span class="tile-icon">◷</span><span>Continue Audit</span></button>
+        <button class="home-tile" data-action="viewSubmitted"><span class="tile-icon">▤</span><span>Submitted Audits</span></button>
+        <button class="home-tile" data-action="report"><span class="tile-icon">▥</span><span>Reports</span></button>
+        <button class="home-tile" data-action="settings"><span class="tile-icon">⚙</span><span>Settings</span></button>
+      </nav>
+    </section>
+  </template>
+
+  <template id="storeTemplate">
+    <section class="card">
+      <h2>Store Info</h2>
+      <div class="grid two">
+        <label>Store Number<input id="storeNumber" placeholder="Example: 4521" /></label>
+        <label>Chain<select id="chain"><option>Walmart</option><option>Sam's Club</option><option>Kroger</option><option>Safeway</option><option>Other</option></select></label>
+        <label>Store Name<input id="storeName" placeholder="Example: Walmart Supercenter" /></label>
+        <label>Tech Name<input id="techName" placeholder="Audit tech name" /></label>
+        <label>City / State<input id="cityState" placeholder="Fort Smith, AR" /></label>
+        <label>Store Contact<input id="contact" placeholder="Manager / requester" /></label>
+      </div>
+      <label>Store Overview Photo Notes<input id="storePhotos" placeholder="Front of store, section overview, manager notes..." /></label>
+      <label>Store Overview Photos<input id="storePhotoInput" type="file" accept="image/*" capture="environment" multiple /></label>
+      <div id="storePhotoPreview" class="photo-grid"></div>
+      <label>Audit Notes<textarea id="auditNotes" placeholder="Reason for visit, special instructions, manager notes..."></textarea></label>
+      <div class="actions"><button class="primary" data-action="saveStore">Start Inspection</button></div>
+    </section>
+  </template>
+
+  <template id="areaTemplate">
+    <section class="card">
+      <div class="section-head">
+        <div><h2>Select Area</h2><p class="muted" id="storeLine"></p></div>
+        <button data-action="report">View Report</button>
+      </div>
+      <div class="area-grid" id="areaGrid"></div>
+    </section>
+  </template>
+
+  <template id="runTemplate">
+    <section class="card">
+      <h2 id="runTitle">Create Refrigeration Run</h2>
+      <p class="muted">Use this for one lineup/fixture. Capture doors, case components, photos, measurements, and location notes in one pass.</p>
+      <div class="grid two">
+        <label>Run ID<select id="runCode"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></label>
+        <label>Run Name<input id="runName" placeholder="Example: Frozen Aisle 12 North Side" /></label>
+        <label>Door Count<input id="doorCount" type="number" min="0" max="300" value="12" /></label>
+        <label>Start Point<input id="startPoint" placeholder="Example: Starting near bakery end" /></label>
+        <label>Direction<select id="direction"><option>Left to Right</option><option>Right to Left</option><option>Front to Back</option><option>Back to Front</option><option>Custom / See Notes</option></select></label>
+        <label>Run Reference Photo Notes<input id="runPhotos" placeholder="Wide photo showing where this run starts" /></label>
+        <label>Run Reference Photos<input id="runPhotoInput" type="file" accept="image/*" capture="environment" multiple /></label>
+        <div id="runPhotoPreview" class="photo-grid wide"></div>
+        <label>Door Brand<select id="doorBrand"><option>Anthony</option><option>Hussmann</option><option>Styleline</option><option>Generic</option></select></label>
+        <label>Door Model<select id="doorModel"></select></label>
+        <label>Case Brand<select id="caseBrand"><option>Hillphoenix</option><option>Hussmann</option><option>Tyler</option><option>Zero Zone</option><option>Kysor Warren</option><option>Other</option><option>Unknown</option></select></label>
+        <label>Temperature Concern<select id="tempConcern"><option>No</option><option>Yes</option><option>Unknown</option></select></label>
+        <label>Case Model Number<input id="caseModel" placeholder="Model number for case/fixture" /></label>
+        <label>Case Serial Number<input id="caseSerial" placeholder="Serial number for case/fixture" /></label>
+      </div>
+      <div class="parts-panel">
+        <h3>Case Components Needed</h3>
+        <p class="muted">Use this for trim, corners, floor railing, deck pans, honeycomb, night shades, case ends, and miscellaneous case parts. Measurements and photos are important.</p>
+        <div id="casePartsCatalog"></div>
+      </div>
+      <label>Case Component Photo Notes<input id="casePhotoNotes" placeholder="Photo notes for trim, honeycomb, model tag, damage, measurements..." /></label>
+      <label>Case Component Photos<input id="casePhotoInput" type="file" accept="image/*" capture="environment" multiple /></label>
+      <div id="casePhotoPreview" class="photo-grid wide"></div>
+      <label>Run Notes<textarea id="runNotes" placeholder="Overall condition, location notes, fixture notes..."></textarea></label>
+      <div class="actions">
+        <button data-action="backAreas">Back</button>
+        <button class="primary" data-action="createRun">Create Door Run</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="walkinTemplate">
+    <section class="card">
+      <h2 id="walkinTitle">Create Walk-In Audit</h2>
+      <p class="muted">Walk-ins need model/serial documentation, overview photos, door brand, and hardware/trim parts. This does not use reach-in run numbering.</p>
+      <div class="grid two">
+        <label>Walk-In ID<select id="walkinCode"><option>WI-1</option><option>WI-2</option><option>WI-3</option><option>WI-4</option></select></label>
+        <label>Type<select id="walkinType"><option>Walk-In Cooler</option><option>Walk-In Freezer</option></select></label>
+        <label>Location / Description<input id="walkinName" placeholder="Example: Backroom freezer by receiving" /></label>
+        <label>Door Brand<select id="walkinBrand"><option>Jamison</option><option>Regent</option><option>Crown Tonka</option><option>KPS</option><option>Kysor Warren</option><option>Franks</option><option>Generic</option></select></label>
+        <label>Model Number<input id="walkinModel" placeholder="Model number" /></label>
+        <label>Serial Number<input id="walkinSerial" placeholder="Serial number" /></label>
+        <label>Photo Notes<input id="walkinPhotos" placeholder="Door, model tag, problem areas" /></label>
+        <label>Walk-In Photos<input id="walkinPhotoInput" type="file" accept="image/*" capture="environment" multiple /></label>
+        <div id="walkinPhotoPreview" class="photo-grid wide"></div>
+        <label>Urgency<select id="walkinUrgency"><option>Normal</option><option>High</option><option>Food Safety Concern</option></select></label>
+      </div>
+      <div class="parts-panel">
+        <h3>Walk-In Parts Needed</h3>
+        <div id="walkinPartsCatalog"></div>
+      </div>
+      <label>Walk-In Notes<textarea id="walkinNotes" placeholder="Door condition, battens, closer, leaks, gasket notes..."></textarea></label>
+      <div class="actions">
+        <button data-action="backAreas">Back</button>
+        <button class="primary" data-action="saveWalkin">Save Walk-In Audit</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="doorTemplate">
+    <section class="card door-card">
+      <div class="door-progress">
+        <div><div class="eyebrow" id="doorArea"></div><h2 id="doorTitle"></h2><p class="muted" id="doorRun"></p></div>
+        <div class="pill" id="doorStatusPill">Draft</div>
+      </div>
+      <div class="quick-actions">
+        <button data-action="copyPrev">Copy Previous Door</button>
+        <button data-action="markGood">Mark Good</button>
+        <button data-action="flagUrgent">Flag Urgent</button>
+      </div>
+      <div class="grid two compact">
+        <label>Gasket<select data-field="gasket"><option>Good</option><option>Replace</option><option>Repair</option></select></label>
+        <label>Handle<select data-field="handle"><option>Good</option><option>Replace</option><option>Repair</option></select></label>
+        <label>Hinges<select data-field="hinges"><option>Good</option><option>Replace</option><option>Adjust</option></select></label>
+        <label>Torque Rod / Closer<select data-field="torqueRod"><option>Good</option><option>Replace</option><option>Adjust</option></select></label>
+        <label>Hold Open<select data-field="holdOpen"><option>Good</option><option>Replace</option><option>Adjust</option><option>N/A</option></select></label>
+        <label>Door Alignment<select data-field="alignment"><option>Good</option><option>Adjust</option><option>Replace Parts</option></select></label>
+        <label>Glass Fogging<select data-field="fogging"><option>No</option><option>Yes</option></select></label>
+        <label>Air Leak<select data-field="airLeak"><option>No</option><option>Yes</option></select></label>
+        <label>Frame Heater Issue<select data-field="heater"><option>No</option><option>Yes</option><option>Unknown</option></select></label>
+        <label>Moisture / Dryer Issue<select data-field="moisture"><option>No</option><option>Yes</option></select></label>
+        <label>Curtain / Strip Issue<select data-field="curtain"><option>No</option><option>Yes</option><option>N/A</option></select></label>
+        <label>Urgency<select data-field="urgency"><option>Normal</option><option>High</option><option>Food Safety Concern</option></select></label>
+      </div>
+      <div class="parts-panel">
+        <h3>Manufacturer Parts Needed</h3>
+        <p class="muted" id="partsHint"></p>
+        <div id="partsCatalog"></div>
+      </div>
+      <label>Issue Photo Notes<input data-field="photoNotes" placeholder="Describe photo/damage for this door" /></label>
+      <label>Door Issue Photos<input id="doorPhotoInput" type="file" accept="image/*" capture="environment" multiple /></label>
+      <div id="doorPhotoPreview" class="photo-grid wide"></div>
+      <label>Door Notes<textarea data-field="notes" placeholder="Measurements, special notes, damage details..."></textarea></label>
+      <div class="actions split">
+        <button data-action="prevDoor">Previous</button>
+        <button data-action="sectionSummary">Run Summary</button>
+        <button class="primary" data-action="saveNext">Save & Next Door</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="summaryTemplate">
+    <section class="card">
+      <div class="section-head"><div><h2 id="summaryTitle"></h2><p class="muted" id="summaryMeta"></p></div><button data-action="report">View Report</button></div>
+      <div id="summaryStats" class="stats"></div>
+      <div class="actions">
+        <button data-action="addRun">Add Another Run</button>
+        <button data-action="backAreas">Move to Next Area</button>
+      </div>
+      <div id="doorList" class="door-list"></div>
+    </section>
+  </template>
+
+  <template id="reportTemplate">
+    <section class="card report">
+      <div class="section-head"><div><h2>Store Report / Email Draft</h2><p class="muted" id="reportStore"></p></div><button data-action="backAreas">Back to Areas</button></div>
+      <div id="reportContent"></div>
+      <div class="report-block">
+        <h3>Email Draft</h3>
+        <textarea id="emailDraft" readonly></textarea>
+      </div>
+      <div class="actions"><button class="primary" data-action="submitAudit">Submit Audit</button><button data-action="copyEmail">Copy Email Summary</button><button data-action="openEmail">Open Email Draft</button><button data-action="downloadJson">Download Report Data</button><button data-action="downloadEmail">Download Email Text</button><button data-action="showDatabase">Database Outline</button><button data-action="resetDemo">Reset Prototype</button></div>
+    </section>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
