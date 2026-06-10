@@ -110,3 +110,8 @@ label{display:grid;gap:7px;color:#eaf2f9;font-weight:800;font-size:13px}input,se
 @media(max-width:760px){
   .case-label{grid-column:1/-1}
 }
+
+
+/* v6.2.3 submit workflow */
+.success-block{border-color:rgba(107,214,58,.55)!important;box-shadow:0 0 0 1px rgba(107,214,58,.18) inset}
+.submitted-screen .actions{gap:.75rem;flex-wrap:wrap}

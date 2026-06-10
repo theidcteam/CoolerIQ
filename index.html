@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CoolerIQ v6.2.2 Audit Prototype</title>
+  <title>CoolerIQ v6.2.3 Audit Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -180,6 +180,29 @@
         <button data-action="backAreas">Move to Next Area</button>
       </div>
       <div id="doorList" class="door-list"></div>
+    </section>
+  </template>
+
+  <template id="submittedTemplate">
+    <section class="card report submitted-screen">
+      <div class="section-head">
+        <div>
+          <h2>Audit Submitted</h2>
+          <p class="muted" id="submittedStore"></p>
+        </div>
+      </div>
+      <div class="report-block success-block">
+        <h3>Submission Ready</h3>
+        <p>This prototype has marked the audit as submitted and prepared the report package locally.</p>
+        <p class="muted">Production version: this step will save the audit, compressed photos, and parts list to the office database.</p>
+      </div>
+      <div class="actions">
+        <button class="primary" data-action="startFreshAudit">Start New Audit</button>
+        <button data-action="continueEditing">Continue Editing This Audit</button>
+        <button data-action="copyEmail">Copy Email Summary</button>
+        <button data-action="downloadJson">Download Report Data</button>
+        <button data-action="downloadEmail">Download Email Text</button>
+      </div>
     </section>
   </template>
 
