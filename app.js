@@ -168,9 +168,8 @@ function renderCaseParts(containerId, selected){
   const wrap=document.getElementById(containerId); if(!wrap) return;
   wrap.innerHTML = `<div class="case-grid">` + CASE_PARTS.map(p=>{
     const data = selected[p.code] || {};
-    const checked = data.checked ? 'checked' : '';
     return `<div class="case-part-row">
-      <label class="case-check"><input type="checkbox" data-case-code="${p.code}" ${checked}> <strong>${p.code}</strong> ${p.name}</label>
+      <div class="case-label"><strong>${p.code}</strong> ${p.name}</div>
       <input type="number" min="0" step="0.1" placeholder="Qty / ft" value="${data.qty||''}" data-case-qty="${p.code}">
       <input placeholder="Width / size" value="${escapeHtml(data.width||'')}" data-case-width="${p.code}">
       <select data-case-color="${p.code}"><option value="">Color</option><option ${data.color==='Black'?'selected':''}>Black</option><option ${data.color==='White'?'selected':''}>White</option><option ${data.color==='Raw'?'selected':''}>Raw</option><option ${data.color==='Other'?'selected':''}>Other</option></select>
@@ -181,10 +180,13 @@ function renderCaseParts(containerId, selected){
 }
 function collectCaseParts(containerId){
   const wrap=document.getElementById(containerId); const selected={}; if(!wrap) return selected;
-  wrap.querySelectorAll('[data-case-code]:checked').forEach(chk=>{
-    const code=chk.dataset.caseCode;
-    const get=(sel)=>wrap.querySelector(`[${sel}="${code}"]`)?.value || '';
-    selected[code]={checked:true, qty:get('data-case-qty'), width:get('data-case-width'), color:get('data-case-color'), hole:get('data-case-hole'), notes:get('data-case-notes')};
+  CASE_PARTS.forEach(p=>{
+    const code=p.code;
+    const val=(attr)=>wrap.querySelector(`[${attr}="${code}"]`)?.value?.trim() || '';
+    const data={qty:val('data-case-qty'), width:val('data-case-width'), color:val('data-case-color'), hole:val('data-case-hole'), notes:val('data-case-notes')};
+    if(data.qty || data.width || data.color || data.hole || data.notes){
+      selected[code]=data;
+    }
   });
   return selected;
 }
@@ -208,11 +210,21 @@ async function handlePhotoInput(input){
   if(input.id==='walkinPhotoInput') { max=1800; q=.78; }
   const processed=[];
   for(const f of files) processed.push(await compressImageFile(f,max,q));
-  if(input.id==='storePhotoInput'){ state.audit.store.photos=[...(state.audit.store.photos||[]),...processed]; renderPhotoPreview('storePhotoPreview', state.audit.store.photos); }
-  if(input.id==='runPhotoInput'){ state.tempRunPhotos=[...(state.tempRunPhotos||[]),...processed]; renderPhotoPreview('runPhotoPreview', state.tempRunPhotos); }
-  if(input.id==='casePhotoInput'){ state.tempCasePhotos=[...(state.tempCasePhotos||[]),...processed]; renderPhotoPreview('casePhotoPreview', state.tempCasePhotos); }
-  if(input.id==='doorPhotoInput'){ const d=getRun()?.doors[state.currentDoorIndex]; if(d){ d.photos=[...(d.photos||[]),...processed]; renderPhotoPreview('doorPhotoPreview', d.photos); } }
-  if(input.id==='walkinPhotoInput'){ state.tempWalkinPhotos=[...(state.tempWalkinPhotos||[]),...processed]; renderPhotoPreview('walkinPhotoPreview', state.tempWalkinPhotos); }
+  const mergePhotos=(existing, incoming)=>{
+    const seen=new Set((existing||[]).map(p=>p.name+'|'+p.originalSize+'|'+p.width+'x'+p.height));
+    const merged=[...(existing||[])];
+    incoming.forEach(p=>{
+      const key=p.name+'|'+p.originalSize+'|'+p.width+'x'+p.height;
+      if(!seen.has(key)){ seen.add(key); merged.push(p); }
+    });
+    return merged;
+  };
+  if(input.id==='storePhotoInput'){ state.audit.store.photos=mergePhotos(state.audit.store.photos, processed); renderPhotoPreview('storePhotoPreview', state.audit.store.photos); }
+  if(input.id==='runPhotoInput'){ state.tempRunPhotos=mergePhotos(state.tempRunPhotos, processed); renderPhotoPreview('runPhotoPreview', state.tempRunPhotos); }
+  if(input.id==='casePhotoInput'){ state.tempCasePhotos=mergePhotos(state.tempCasePhotos, processed); renderPhotoPreview('casePhotoPreview', state.tempCasePhotos); }
+  if(input.id==='doorPhotoInput'){ const d=getRun()?.doors[state.currentDoorIndex]; if(d){ d.photos=mergePhotos(d.photos, processed); renderPhotoPreview('doorPhotoPreview', d.photos); } }
+  if(input.id==='walkinPhotoInput'){ state.tempWalkinPhotos=mergePhotos(state.tempWalkinPhotos, processed); renderPhotoPreview('walkinPhotoPreview', state.tempWalkinPhotos); }
+  input.value='';
   saveLocal();
 }
 function collectCheckedParts(containerId){
@@ -234,7 +246,7 @@ function showSummary(){ const run=getRun(); cloneTemplate('summaryTemplate'); do
 function showReport(){
   cloneTemplate('reportTemplate'); const s=state.audit.store; document.getElementById('reportStore').textContent=`${s.chain||''} ${s.storeNumber?'#'+s.storeNumber:''} • ${s.cityState||''}`; const content=document.getElementById('reportContent'); const totals=summarizeAudit(state.audit);
   content.innerHTML=`<div class="stats"><div class="stat"><strong>${totals.runs}</strong>Runs</div><div class="stat"><strong>${totals.doors}</strong>Reach-In Doors</div><div class="stat"><strong>${state.audit.walkins.length}</strong>Walk-Ins</div><div class="stat"><strong>${totals.photos}</strong>Photos</div><div class="stat"><strong>${totals.needs}</strong>Need Work</div></div>
-  <div class="report-block"><h3>Parts Summary</h3><ul class="parts-list">${Object.entries(totals.parts).map(([k,v])=>`<li>${v} ${labelFor(k)}</li>`).join('')||'<li>No parts flagged yet.</li>'}</ul></div>`;
+  <div class="report-block"><h3>Parts Summary <span class="muted">(selected parts only)</span></h3><ul class="parts-list">${Object.entries(totals.parts).map(([k,v])=>`<li>${v} ${labelFor(k)}</li>`).join('')||'<li>No parts flagged yet.</li>'}</ul></div>`;
   state.audit.runs.forEach(run=>{
     const block=document.createElement('div'); block.className='report-block';
     const rows=run.doors.filter(doorNeedsWork).map(d=>`<li><strong>Door ${d.repairId}</strong>: ${escapeHtml(buildIssueList(d).join(', '))}${d.photoNotes?`<br><span class="muted">Photo notes: ${escapeHtml(d.photoNotes)}</span>`:''}${d.photos?.length?`<br><span class="muted">${d.photos.length} compressed photo(s) attached</span>`:''}${d.notes?`<br><span class="muted">Notes: ${escapeHtml(d.notes)}</span>`:''}</li>`).join('');
@@ -247,7 +259,7 @@ function showReport(){
   state.audit.walkins.forEach(w=>{ const block=document.createElement('div'); block.className='report-block'; block.innerHTML=`<h3>${w.area}: ${w.code} — ${escapeHtml(w.name||'Walk-In')}</h3><p class="muted">${w.brand} • Model: ${escapeHtml(w.model||'not entered')} • Serial: ${escapeHtml(w.serial||'not entered')} • Photos: ${(w.photoFiles||[]).length} • Notes: ${escapeHtml(w.photos||'not entered')}</p><ul>${Object.entries(w.selectedParts||{}).map(([c,q])=>`<li>${c} ${labelFor(c)} x${q}</li>`).join('')||'<li>No parts selected.</li>'}</ul>${w.notes?`<p>${escapeHtml(w.notes)}</p>`:''}`; content.appendChild(block); });
   document.getElementById('emailDraft').value = buildEmailDraft();
 }
-function buildEmailDraft(){ const s=state.audit.store; const totals=summarizeAudit(state.audit); let lines=[]; lines.push(`Subject: ${s.chain||'Store'} #${s.storeNumber||''} - Refrigeration Audit - ${s.date||''}`); lines.push(''); lines.push(`${s.chain||'Store'} ${s.storeNumber?'#'+s.storeNumber:''}`); lines.push(`${s.storeName||''} ${s.cityState?'• '+s.cityState:''}`); lines.push(`Audit Tech: ${s.techName||''}`); lines.push(''); lines.push(`Summary: ${totals.runs} refrigeration runs, ${totals.doors} reach-in doors, ${state.audit.walkins.length} walk-ins, ${totals.photos} compressed photos, ${totals.needs} items/doors needing work.`); lines.push(''); lines.push('Parts Summary:'); Object.entries(totals.parts).forEach(([k,v])=>lines.push(`- ${labelFor(k)}: ${v}`)); if(!Object.keys(totals.parts).length) lines.push('- No parts flagged yet.'); lines.push(''); state.audit.runs.forEach(run=>{ lines.push(`${run.area} — Run ${run.runCode}: ${run.runName}`); lines.push(`Start: ${run.startPoint||'not entered'} | Direction: ${run.direction} | Run Photos: ${(run.photos||[]).length} | Reference Notes: ${run.runPhotos||'not entered'}`); run.doors.filter(doorNeedsWork).forEach(d=>lines.push(`- Door ${d.repairId}: ${buildIssueList(d).join(', ')}${d.photos?.length?' | Photos: '+d.photos.length:''}${d.photoNotes?' | Photo Notes: '+d.photoNotes:''}${d.notes?' | Notes: '+d.notes:''}`)); const caseParts=formatCasePartsText(run.caseComponents?.selectedParts||{}); if(caseParts.length){ lines.push('Case Components:'); lines.push(`Case: ${run.caseBrand||''} | Model: ${run.caseComponents?.model||'not entered'} | Serial: ${run.caseComponents?.serial||'not entered'} | Photos: ${(run.caseComponents?.photos||[]).length}`); caseParts.forEach(x=>lines.push(`- ${x}`)); } lines.push(''); }); state.audit.walkins.forEach(w=>{ lines.push(`${w.area} — ${w.code}: ${w.name||'Walk-In'}`); lines.push(`Brand: ${w.brand} | Model: ${w.model||'not entered'} | Serial: ${w.serial||'not entered'} | Photos: ${(w.photoFiles||[]).length} | Photo Notes: ${w.photos||'not entered'}`); Object.entries(w.selectedParts||{}).forEach(([c,q])=>lines.push(`- ${c} ${labelFor(c)} x${q}`)); if(w.notes) lines.push(`Notes: ${w.notes}`); lines.push(''); }); return lines.join('\n'); }
+function buildEmailDraft(){ const s=state.audit.store; const totals=summarizeAudit(state.audit); let lines=[]; lines.push(`Subject: ${s.chain||'Store'} #${s.storeNumber||''} - Refrigeration Audit - ${s.date||''}`); lines.push(''); lines.push(`${s.chain||'Store'} ${s.storeNumber?'#'+s.storeNumber:''}`); lines.push(`${s.storeName||''} ${s.cityState?'• '+s.cityState:''}`); lines.push(`Audit Tech: ${s.techName||''}`); lines.push(''); lines.push(`Summary: ${totals.runs} refrigeration runs, ${totals.doors} reach-in doors, ${state.audit.walkins.length} walk-ins, ${totals.photos} compressed photos, ${totals.needs} items/doors needing work.`); lines.push(''); lines.push('Parts Summary (counted from selected parts only):'); Object.entries(totals.parts).forEach(([k,v])=>lines.push(`- ${labelFor(k)}: ${v}`)); if(!Object.keys(totals.parts).length) lines.push('- No parts flagged yet.'); lines.push(''); state.audit.runs.forEach(run=>{ lines.push(`${run.area} — Run ${run.runCode}: ${run.runName}`); lines.push(`Start: ${run.startPoint||'not entered'} | Direction: ${run.direction} | Run Photos: ${(run.photos||[]).length} | Reference Notes: ${run.runPhotos||'not entered'}`); run.doors.filter(doorNeedsWork).forEach(d=>lines.push(`- Door ${d.repairId}: ${buildIssueList(d).join(', ')}${d.photos?.length?' | Photos: '+d.photos.length:''}${d.photoNotes?' | Photo Notes: '+d.photoNotes:''}${d.notes?' | Notes: '+d.notes:''}`)); const caseParts=formatCasePartsText(run.caseComponents?.selectedParts||{}); if(caseParts.length){ lines.push('Case Components:'); lines.push(`Case: ${run.caseBrand||''} | Model: ${run.caseComponents?.model||'not entered'} | Serial: ${run.caseComponents?.serial||'not entered'} | Photos: ${(run.caseComponents?.photos||[]).length}`); caseParts.forEach(x=>lines.push(`- ${x}`)); } lines.push(''); }); state.audit.walkins.forEach(w=>{ lines.push(`${w.area} — ${w.code}: ${w.name||'Walk-In'}`); lines.push(`Brand: ${w.brand} | Model: ${w.model||'not entered'} | Serial: ${w.serial||'not entered'} | Photos: ${(w.photoFiles||[]).length} | Photo Notes: ${w.photos||'not entered'}`); Object.entries(w.selectedParts||{}).forEach(([c,q])=>lines.push(`- ${c} ${labelFor(c)} x${q}`)); if(w.notes) lines.push(`Notes: ${w.notes}`); lines.push(''); }); return lines.join('\n'); }
 
 function handleClick(e){ const btn=e.target.closest('button'); if(!btn) return; const a=btn.dataset.action; if(a==='newAudit') newAudit(); if(a==='continueAudit'){ const saved=loadLocal(); if(!saved) return alert('No saved prototype audit found yet.'); state.audit=saved; showAreas(); } if(a==='viewSubmitted'||a==='report'){ if(!state.audit) state.audit=loadLocal(); if(!state.audit) return alert('No saved prototype audit found yet.'); showReport(); } if(a==='settings'){ alert('Settings are placeholder-only in this prototype.'); } if(a==='saveStore') saveStore(); if(a==='selectArea') showAreaEntry(btn.dataset.area); if(a==='backAreas') showAreas(); if(a==='createRun') createRunFromForm(); if(a==='saveWalkin') saveWalkin(); if(a==='copyPrev') copyPreviousDoor(); if(a==='markGood') markDoorGood(); if(a==='flagUrgent') flagUrgent(); if(a==='saveNext') saveDoorAndNext(); if(a==='prevDoor') prevDoor(); if(a==='sectionSummary'){ saveCurrentDoor(); showSummary(); } if(a==='addRun') showRun(getRun().area); if(a==='editDoor'){ state.currentDoorIndex=Number(btn.dataset.index); showDoor(); } if(a==='downloadJson') downloadJson(); if(a==='downloadEmail') downloadEmail(); if(a==='submitAudit') submitAudit(); if(a==='copyEmail') copyEmail(); if(a==='openEmail') openEmailDraft(); if(a==='showDatabase') showDatabaseOutline(); if(a==='resetDemo') resetDemo(); }
 async function handleChange(e){ if(e.target.matches('input[type="file"]')){ await handlePhotoInput(e.target); return; } const run=getRun(); if(!run) return; const door=run.doors[state.currentDoorIndex]; if(!door) return; if(e.target.matches('[data-part-code]')){ door.selectedParts=collectCheckedParts('partsCatalog'); door.status='Checked'; updatePill(door); saveLocal(); } if(e.target.matches('[data-part-qty]')){ door.selectedParts=collectCheckedParts('partsCatalog'); door.status='Checked'; saveLocal(); } if(e.target.matches('[data-field]')){ door[e.target.dataset.field]=e.target.value; door.status='Checked'; updatePill(door); saveLocal(); } }
@@ -255,7 +267,19 @@ async function handleChange(e){ if(e.target.matches('input[type="file"]')){ awai
 function summarizeRun(run){ const complete=run.doors.filter(d=>d.status==='Checked').length; const good=run.doors.filter(d=>d.status==='Checked'&&!doorNeedsWork(d)).length; const needs=run.doors.filter(doorNeedsWork).length; const urgent=run.doors.filter(d=>d.urgency==='High'||d.urgency==='Food Safety Concern').length; return {complete,good,needs,urgent}; }
 function summarizeAudit(audit){ const totals={runs:audit.runs.length,doors:0,needs:0,urgent:0,photos:(audit.store?.photos||[]).length,parts:{}}; audit.runs.forEach(run=>{ totals.doors+=run.doors.length; totals.photos+=(run.photos||[]).length+(run.caseComponents?.photos||[]).length; run.doors.forEach(d=>{ totals.photos+=(d.photos||[]).length; if(doorNeedsWork(d)) totals.needs++; if(d.urgency==='High'||d.urgency==='Food Safety Concern') totals.urgent++; Object.entries(d.selectedParts||{}).forEach(([c,q])=>{ if(Number(q)>0) totals.parts[c]=(totals.parts[c]||0)+Number(q||0); }); }); Object.entries(run.caseComponents?.selectedParts||{}).forEach(([c,data])=>{ const n=parseFloat(data.qty)||1; totals.parts[c]=(totals.parts[c]||0)+n; totals.needs++; }); }); audit.walkins.forEach(w=>{ totals.photos+=(w.photoFiles||[]).length; Object.entries(w.selectedParts||{}).forEach(([c,q])=>{ if(Number(q)>0) totals.parts[c]=(totals.parts[c]||0)+Number(q||0); }); }); return totals; }
 function doorNeedsWork(d){ return buildIssueList(d).length>0 || d.urgency==='High' || d.urgency==='Food Safety Concern'; }
-function buildIssueList(d){ const issues=[]; for(const [field,value] of Object.entries(d)){ if(isIssue(field,value)) issues.push(`${labelFor(field)}: ${value}`); } Object.entries(d.selectedParts||{}).forEach(([code,qty])=>{ if(Number(qty)>0) issues.push(`${code} ${labelFor(code)} x${qty}`); }); return issues; }
+function buildIssueList(d){
+  const inspection=[]; const parts=[];
+  for(const [field,value] of Object.entries(d)){
+    if(isIssue(field,value)) inspection.push(`${labelFor(field)}: ${value}`);
+  }
+  Object.entries(d.selectedParts||{}).forEach(([code,qty])=>{
+    if(Number(qty)>0) parts.push(`${code} ${labelFor(code)} x${qty}`);
+  });
+  if(parts.length && inspection.length) return [`Parts: ${parts.join(', ')}`, `Inspection flags: ${inspection.join(', ')}`];
+  if(parts.length) return [`Parts: ${parts.join(', ')}`];
+  if(inspection.length) return [`Inspection flags: ${inspection.join(', ')}`];
+  return [];
+}
 function isIssue(field,value){ if(!value) return false; if(['doorNumber','repairId','status','notes','photoNotes','urgency','selectedParts'].includes(field)) return false; if(['Good','No','N/A','Normal'].includes(value)) return false; return true; }
 function labelFor(field){ const labels={gasket:'Gaskets',handle:'Handles',hinges:'Hinge Sets',torqueRod:'Torque Rods / Closers',holdOpen:'Hold-Opens',alignment:'Door Alignment',fogging:'Glass Fogging',airLeak:'Air Leaks',heater:'Frame Heater Issues',moisture:'Dryer / Moisture Issues',curtain:'Curtains / Strips'}; const p=findPart(field); return p?p.name:(labels[field]||field); }
 function findPart(code){ for(const brand of Object.values(PART_CATALOG)){ for(const parts of Object.values(brand)){ const m=parts.find(p=>p.code===code); if(m) return m; } } return WALKIN_PARTS.find(p=>p.code===code)||CASE_PARTS.find(p=>p.code===code)||null; }

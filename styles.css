@@ -103,3 +103,10 @@ label{display:grid;gap:7px;color:#eaf2f9;font-weight:800;font-size:13px}input,se
   .case-part-row{grid-template-columns:1fr 1fr}
   .case-check{grid-column:1/-1}
 }
+
+
+/* v6.2.2 case component cleanup */
+.case-label{font-weight:800;color:#eef7ff;line-height:1.15}
+@media(max-width:760px){
+  .case-label{grid-column:1/-1}
+}
