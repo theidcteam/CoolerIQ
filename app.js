@@ -238,30 +238,14 @@ function collectCheckedParts(containerId){
 }
 
 function saveCurrentDoor(){ const run=getRun(); if(!run) return; const d=run.doors[state.currentDoorIndex]; document.querySelectorAll('[data-field]').forEach(input=>d[input.dataset.field]=input.value); d.selectedParts=collectCheckedParts('partsCatalog'); d.status='Checked'; saveLocal(); }
-function saveDoorAndNext(){ const run=getRun(); saveCurrentDoor(); if(state.currentDoorIndex<run.doors.length-1){ state.currentDoorIndex++; const current=run.doors[state.currentDoorIndex]; const prev=run.doors[state.currentDoorIndex-1]; if(current.status==='Draft') Object.assign(current,{...prev,doorNumber:current.doorNumber,repairId:current.repairId,status:'Draft',notes:'',photoNotes:''}); saveLocal(); showDoor(); } else showSummary(); }
-function copyPreviousDoor(){ const run=getRun(); if(state.currentDoorIndex===0) return alert('This is the first door. Nothing to copy yet.'); const {doorNumber,repairId}=run.doors[state.currentDoorIndex]; run.doors[state.currentDoorIndex]={...run.doors[state.currentDoorIndex-1],doorNumber,repairId,status:'Checked'}; saveLocal(); showDoor(); }
-function markDoorGood(){ const run=getRun(); const {doorNumber,repairId}=run.doors[state.currentDoorIndex]; run.doors[state.currentDoorIndex]={...DEFAULT_DOOR,doorNumber,repairId,status:'Checked'}; saveLocal(); showDoor(); }
-function flagUrgent(){ const d=getRun().doors[state.currentDoorIndex]; d.urgency='Food Safety Concern'; d.status='Checked'; saveLocal(); showDoor(); }
-function prevDoor(){ saveCurrentDoor(); if(state.currentDoorIndex>0) state.currentDoorIndex--; showDoor(); }
-function getRun(){ return state.audit?.runs.find(r=>r.id===state.currentRunId) || state.audit?.runs[state.audit.runs.length-1]; }
-
-function showSummary(){ const run=getRun(); cloneTemplate('summaryTemplate'); document.getElementById('summaryTitle').textContent=`${run.area}: ${run.runName}`; document.getElementById('summaryMeta').textContent=`Run ${run.runCode} • ${run.startPoint||'start not entered'} • ${run.direction} • ${run.doorCount} doors`; const stats=summarizeRun(run); document.getElementById('summaryStats').innerHTML=`<div class="stat"><strong>${stats.complete}</strong>Checked</div><div class="stat"><strong>${stats.good}</strong>Good</div><div class="stat"><strong>${stats.needs}</strong>Need Work</div><div class="stat"><strong>${stats.urgent}</strong>Urgent</div>`; const list=document.getElementById('doorList'); run.doors.forEach((door,index)=>{ const row=document.createElement('div'); row.className='door-row'; const issueText=doorNeedsWork(door)?buildIssueList(door).join(', '):'Good'; row.innerHTML=`<div><strong>Door ${door.repairId}</strong><br><span class="muted">${escapeHtml(issueText)}</span></div><button data-action="editDoor" data-index="${index}">Edit</button>`; list.appendChild(row); }); }
-
-function showReport(){
-  cloneTemplate('reportTemplate'); const s=state.audit.store; document.getElementById('reportStore').textContent=`${s.chain||''} ${s.storeNumber?'#'+s.storeNumber:''} • ${s.cityState||''}`; const content=document.getElementById('reportContent'); const totals=summarizeAudit(state.audit);
-  content.innerHTML=`<div class="stats"><div class="stat"><strong>${totals.runs}</strong>Runs</div><div class="stat"><strong>${totals.doors}</strong>Reach-In Doors</div><div class="stat"><strong>${state.audit.walkins.length}</strong>Walk-Ins</div><div class="stat"><strong>${totals.photos}</strong>Photos</div><div class="stat"><strong>${totals.needs}</strong>Need Work</div></div>
-  <div class="report-block"><h3>Parts Summary <span class="muted">(selected parts only)</span></h3><ul class="parts-list">${Object.entries(totals.parts).map(([k,v])=>`<li>${v} ${labelFor(k)}</li>`).join('')||'<li>No parts flagged yet.</li>'}</ul></div>`;
-  state.audit.runs.forEach(run=>{
-    const block=document.createElement('div'); block.className='report-block';
-    const rows=run.doors.filter(doorNeedsWork).map(d=>`<li><strong>Door ${d.repairId}</strong>: ${escapeHtml(buildIssueList(d).join(', '))}${d.photoNotes?`<br><span class="muted">Photo notes: ${escapeHtml(d.photoNotes)}</span>`:''}${d.photos?.length?`<br><span class="muted">${d.photos.length} compressed photo(s) attached</span>`:''}${d.notes?`<br><span class="muted">Notes: ${escapeHtml(d.notes)}</span>`:''}</li>`).join('');
-    const caseRows=formatCasePartsHtml(run.caseComponents?.selectedParts||{});
-    block.innerHTML=`<h3>${run.area}: Run ${run.runCode} — ${run.runName}</h3><p class="muted">Start: ${escapeHtml(run.startPoint||'not entered')} • Direction: ${run.direction} • Run photos: ${(run.photos||[]).length} • Reference notes: ${escapeHtml(run.runPhotos||'not entered')}</p>
-    <h4>Doors</h4><ul>${rows||'<li>All doors marked good or no reach-in doors in this run.</li>'}</ul>
-    <h4>Case Components</h4><p class="muted">${escapeHtml(run.caseBrand||'Case')} • Model: ${escapeHtml(run.caseComponents?.model||'not entered')} • Serial: ${escapeHtml(run.caseComponents?.serial||'not entered')} • Case photos: ${(run.caseComponents?.photos||[]).length}</p><ul>${caseRows||'<li>No case components selected.</li>'}</ul>`;
-    content.appendChild(block);
-  });
-  state.audit.walkins.forEach(w=>{ const block=document.createElement('div'); block.className='report-block'; block.innerHTML=`<h3>${w.area}: ${w.code} — ${escapeHtml(w.name||'Walk-In')}</h3><p class="muted">${w.brand} • Model: ${escapeHtml(w.model||'not entered')} • Serial: ${escapeHtml(w.serial||'not entered')} • Photos: ${(w.photoFiles||[]).length} • Notes: ${escapeHtml(w.photos||'not entered')}</p><ul>${Object.entries(w.selectedParts||{}).map(([c,q])=>`<li>${c} ${labelFor(c)} x${q}</li>`).join('')||'<li>No parts selected.</li>'}</ul>${w.notes?`<p>${escapeHtml(w.notes)}</p>`:''}`; content.appendChild(block); });
-  document.getElementById('emailDraft').value = buildEmailDraft();
+function saveDoorAndNext(){
+  const run=getRun();
+  saveCurrentDoor();
+  if(state.currentDoorIndex<run.doors.length-1){
+    state.currentDoorIndex++;
+    saveLocal();
+    showDoor();
+  } else showSummary();
 }
 function buildEmailDraft(){ const s=state.audit.store; const totals=summarizeAudit(state.audit); let lines=[]; lines.push(`Subject: ${s.chain||'Store'} #${s.storeNumber||''} - Refrigeration Audit - ${s.date||''}`); lines.push(''); lines.push(`${s.chain||'Store'} ${s.storeNumber?'#'+s.storeNumber:''}`); lines.push(`${s.storeName||''} ${s.cityState?'• '+s.cityState:''}`); lines.push(`Audit Tech: ${s.techName||''}`); lines.push(''); lines.push(`Summary: ${totals.runs} refrigeration runs, ${totals.doors} reach-in doors, ${state.audit.walkins.length} walk-ins, ${totals.photos} compressed photos, ${totals.needs} items/doors needing work.`); lines.push(''); lines.push('Parts Summary (counted from selected parts only):'); Object.entries(totals.parts).forEach(([k,v])=>lines.push(`- ${labelFor(k)}: ${v}`)); if(!Object.keys(totals.parts).length) lines.push('- No parts flagged yet.'); lines.push(''); state.audit.runs.forEach(run=>{ lines.push(`${run.area} — Run ${run.runCode}: ${run.runName}`); lines.push(`Start: ${run.startPoint||'not entered'} | Direction: ${run.direction} | Run Photos: ${(run.photos||[]).length} | Reference Notes: ${run.runPhotos||'not entered'}`); run.doors.filter(doorNeedsWork).forEach(d=>lines.push(`- Door ${d.repairId}: ${buildIssueList(d).join(', ')}${d.photos?.length?' | Photos: '+d.photos.length:''}${d.photoNotes?' | Photo Notes: '+d.photoNotes:''}${d.notes?' | Notes: '+d.notes:''}`)); const caseParts=formatCasePartsText(run.caseComponents?.selectedParts||{}); if(caseParts.length){ lines.push('Case Components:'); lines.push(`Case: ${run.caseBrand||''} | Model: ${run.caseComponents?.model||'not entered'} | Serial: ${run.caseComponents?.serial||'not entered'} | Photos: ${(run.caseComponents?.photos||[]).length}`); caseParts.forEach(x=>lines.push(`- ${x}`)); } lines.push(''); }); state.audit.walkins.forEach(w=>{ lines.push(`${w.area} — ${w.code}: ${w.name||'Walk-In'}`); lines.push(`Brand: ${w.brand} | Model: ${w.model||'not entered'} | Serial: ${w.serial||'not entered'} | Photos: ${(w.photoFiles||[]).length} | Photo Notes: ${w.photos||'not entered'}`); Object.entries(w.selectedParts||{}).forEach(([c,q])=>lines.push(`- ${c} ${labelFor(c)} x${q}`)); if(w.notes) lines.push(`Notes: ${w.notes}`); lines.push(''); }); return lines.join('\n'); }
 
@@ -365,6 +349,7 @@ function showDatabaseOutline(){
   document.getElementById('emailDraft').value='Production database outline only. No audit email draft on this screen.';
 }
 
+/* v6.2.6: Save & Next no longer auto-copies previous door parts. Use Copy Previous Door only when intentional. */
 showHome(); }
 function getVal(id){ return document.getElementById(id)?.value?.trim() || ''; }
 function setVal(id,val){ const el=document.getElementById(id); if(el && val!==undefined) el.value=val; }
@@ -401,4 +386,5 @@ function showDatabaseOutline(){
   document.getElementById('emailDraft').value='Production database outline only. No audit email draft on this screen.';
 }
 
+/* v6.2.6: Save & Next no longer auto-copies previous door parts. Use Copy Previous Door only when intentional. */
 showHome();
