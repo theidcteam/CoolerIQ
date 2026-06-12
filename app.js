@@ -75,7 +75,18 @@ app.addEventListener('change', handleChange);
 app.addEventListener('input', handleChange);
 
 function cloneTemplate(id){ app.innerHTML=''; app.appendChild(document.getElementById(id).content.cloneNode(true)); }
-function saveLocal(){ if(state.audit) localStorage.setItem('coolerIQPrototypeV620', JSON.stringify(state.audit)); }
+function saveLocal(){
+  if(!state.audit) return;
+  try {
+    const lightweight = JSON.parse(JSON.stringify(state.audit, (key, value)=>{
+      if(key === 'dataUrl') return '';
+      return value;
+    }));
+    localStorage.setItem('coolerIQPrototypeV620', JSON.stringify(lightweight));
+  } catch(err) {
+    console.warn('Local save skipped:', err);
+  }
+}
 function loadLocal(){ try { return JSON.parse(localStorage.getItem('coolerIQPrototypeV620') || 'null'); } catch { return null; } }
 function newAudit(){ state.audit = { id: Date.now(), createdAt: new Date().toISOString(), store:{}, runs:[], walkins:[], version:'6.2.0' }; saveLocal(); showStore(); }
 function showHome(){ cloneTemplate('homeTemplate'); }
@@ -122,6 +133,7 @@ function renderModelOptions(){
   select.innerHTML=models.map(m=>`<option>${m}</option>`).join('');
 }
 function createRunFromForm(){
+  if(!state.audit){ alert('No active audit found. Start a new audit first.'); return; }
   const doorCount=Math.max(0,Math.min(300,parseInt(getVal('doorCount'),10)||0));
   const runCode=getVal('runCode')||'A';
   const caseComponents = {
@@ -192,7 +204,10 @@ function collectCaseParts(containerId){
 }
 function renderPhotoPreview(containerId, photos){
   const wrap=document.getElementById(containerId); if(!wrap) return;
-  wrap.innerHTML = (photos||[]).map((p,i)=>`<figure class="photo-thumb"><img src="${p.dataUrl}" alt="${escapeHtml(p.name||'photo')}"><figcaption>${escapeHtml(p.name||('Photo '+(i+1)))}<br><span>${Math.round((p.size||0)/1024)} KB</span></figcaption></figure>`).join('');
+  wrap.innerHTML = (photos||[]).map((p,i)=>{
+    const img = p.dataUrl ? `<img src="${p.dataUrl}" alt="${escapeHtml(p.name||'photo')}">` : `<div class="photo-placeholder">Photo saved for this session</div>`;
+    return `<figure class="photo-thumb">${img}<figcaption>${escapeHtml(p.name||('Photo '+(i+1)))}<br><span>${Math.round((p.size||0)/1024)} KB</span></figcaption></figure>`;
+  }).join('');
 }
 async function compressImageFile(file, maxWidth=1200, quality=.68){
   const dataUrl = await new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file); });
@@ -349,7 +364,7 @@ function showDatabaseOutline(){
   document.getElementById('emailDraft').value='Production database outline only. No audit email draft on this screen.';
 }
 
-/* v6.2.6: Save & Next no longer auto-copies previous door parts. Use Copy Previous Door only when intentional. */
+/* v6.2.7: localStorage safety patch. Photo data is not stored in browser localStorage to prevent workflow-breaking quota errors. */
 showHome(); }
 function getVal(id){ return document.getElementById(id)?.value?.trim() || ''; }
 function setVal(id,val){ const el=document.getElementById(id); if(el && val!==undefined) el.value=val; }
@@ -386,5 +401,5 @@ function showDatabaseOutline(){
   document.getElementById('emailDraft').value='Production database outline only. No audit email draft on this screen.';
 }
 
-/* v6.2.6: Save & Next no longer auto-copies previous door parts. Use Copy Previous Door only when intentional. */
+/* v6.2.7: localStorage safety patch. Photo data is not stored in browser localStorage to prevent workflow-breaking quota errors. */
 showHome();

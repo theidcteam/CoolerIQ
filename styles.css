@@ -127,3 +127,6 @@ label{display:grid;gap:7px;color:#eaf2f9;font-weight:800;font-size:13px}input,se
   .part-qty-row{align-items:flex-start}
   .qty-stepper button{width:42px;height:42px}
 }
+
+/* v6.2.7 local storage / photo fallback */
+.photo-placeholder{height:92px;display:flex;align-items:center;justify-content:center;text-align:center;padding:.5rem;background:rgba(255,255,255,.06);color:#d8e9f2;font-size:.72rem}
