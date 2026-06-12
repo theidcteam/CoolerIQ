@@ -134,5 +134,6 @@ label{display:grid;gap:7px;color:#eaf2f9;font-weight:800;font-size:13px}input,se
 /* v6.3.1 */
 .app-version{position:absolute;bottom:.6rem;right:.85rem;font-size:.72rem;color:rgba(255,255,255,.55);letter-spacing:.04em}
 
-/* v6.3.2 */
+/* v6.3.3 */
 .actions.split button[data-action="saveAudit"]{background:rgba(0,163,255,.16);border-color:rgba(0,163,255,.45)}
+.field-help{display:block;margin-top:.25rem;font-size:.72rem;color:rgba(216,233,242,.72);font-weight:600}

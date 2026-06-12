@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CoolerIQ v6.3.2 Audit Prototype</title>
+  <title>CoolerIQ v6.3.3 Audit Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -33,7 +33,7 @@
         <button class="home-tile" data-action="report"><span class="tile-icon">▥</span><span>Reports</span></button>
         <button class="home-tile" data-action="settings"><span class="tile-icon">⚙</span><span>Settings</span></button>
       </nav>
-      <div class="app-version">v6.3.2</div>
+      <div class="app-version">v6.3.3</div>
     </section>
   </template>
 
@@ -73,7 +73,7 @@
       <div class="grid two">
         <label>Run ID<select id="runCode"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></label>
         <label>Run Name<input id="runName" placeholder="Example: Frozen Aisle 12 North Side" /></label>
-        <label>Door Count<input id="doorCount" type="number" min="0" max="300" value="12" /></label>
+        <label>Door Count<input id="doorCount" type="number" min="0" max="300" value="12" /><span class="field-help">Estimate only. Extra doors can be added later.</span></label>
         <label>Start Point<input id="startPoint" placeholder="Example: Starting near bakery end" /></label>
         <label>Direction<select id="direction"><option>Left to Right</option><option>Right to Left</option><option>Front to Back</option><option>Back to Front</option><option>Custom / See Notes</option></select></label>
         <label>Run Reference Photo Notes<input id="runPhotos" placeholder="Wide photo showing where this run starts" /></label>

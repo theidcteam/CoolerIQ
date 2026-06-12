@@ -266,7 +266,27 @@ function collectCheckedParts(containerId){
 
 function doorHasAuditData(d){ const hasParts=Object.values(d.selectedParts||{}).some(q=>Number(q)>0); const hasNotes=Boolean((d.notes||'').trim() || (d.photoNotes||'').trim()); const hasPhotos=Boolean((d.photos||[]).length); const hasPriority=d.urgency==='High' || d.urgency==='Food Safety Concern'; return hasParts || hasNotes || hasPhotos || hasPriority; }
 function saveCurrentDoor(){ const run=getRun(); if(!run) return; const d=run.doors[state.currentDoorIndex]; if(!d) return; document.querySelectorAll('[data-field]').forEach(input=>d[input.dataset.field]=input.value); d.selectedParts=collectCheckedParts('partsCatalog'); d.status=doorHasAuditData(d)?'Checked':'Draft'; saveLocal(); }
-function saveDoorAndNext(){ const run=getRun(); saveCurrentDoor(); if(state.currentDoorIndex<run.doors.length-1){ state.currentDoorIndex++; saveLocal(); showDoor(); } else showSummary(); }
+function saveDoorAndNext(){
+  const run=getRun();
+  saveCurrentDoor();
+  if(state.currentDoorIndex<run.doors.length-1){
+    state.currentDoorIndex++;
+    saveLocal();
+    showDoor();
+    return;
+  }
+  const addMore = confirm('You are at the last planned door for this run. Add another door?');
+  if(addMore){
+    const nextNumber=(run.doors?.length||0)+1;
+    run.doorCount=nextNumber;
+    run.doors.push({...DEFAULT_DOOR, photos:[], doorNumber:nextNumber, repairId:`${run.runCode}-${String(nextNumber).padStart(2,'0')}`});
+    state.currentDoorIndex=run.doors.length-1;
+    saveLocal();
+    showDoor();
+  } else {
+    showSummary();
+  }
+}
 function saveAuditOnly(){ saveCurrentDoor(); alert('Audit saved. You can continue this door later or use Next Door when ready.'); }
 function copyPreviousDoor(){ const run=getRun(); if(state.currentDoorIndex===0) return alert('This is the first door. Nothing to copy yet.'); const {doorNumber,repairId}=run.doors[state.currentDoorIndex]; run.doors[state.currentDoorIndex]={...run.doors[state.currentDoorIndex-1],doorNumber,repairId,status:'Checked'}; saveLocal(); showDoor(); }
 function markDoorGood(){ const run=getRun(); const {doorNumber,repairId}=run.doors[state.currentDoorIndex]; run.doors[state.currentDoorIndex]={...DEFAULT_DOOR,doorNumber,repairId,status:'Checked'}; saveLocal(); showDoor(); }
