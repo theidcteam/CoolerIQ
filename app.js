@@ -280,7 +280,7 @@ function showReport(){
 }
 function buildEmailDraft(){ const s=state.audit.store; const totals=summarizeAudit(state.audit); let lines=[]; lines.push(`Subject: ${s.chain||'Store'} #${s.storeNumber||''} - Refrigeration Audit - ${s.date||''}`); lines.push(''); lines.push(`${s.chain||'Store'} ${s.storeNumber?'#'+s.storeNumber:''}`); lines.push(`${s.storeName||''} ${s.cityState?'• '+s.cityState:''}`); lines.push(`Audit Tech: ${s.techName||''}`); lines.push(''); lines.push(`Summary: ${totals.runs} refrigeration runs, ${totals.doors} reach-in doors, ${state.audit.walkins.length} walk-ins, ${totals.photos} compressed photos, ${totals.needs} items/doors needing work.`); lines.push(''); lines.push('Parts Summary (counted from selected parts only):'); Object.entries(totals.parts).forEach(([k,v])=>lines.push(`- ${labelFor(k)}: ${v}`)); if(!Object.keys(totals.parts).length) lines.push('- No parts flagged yet.'); lines.push(''); state.audit.runs.forEach(run=>{ lines.push(`${run.area} — Run ${run.runCode}: ${run.runName}`); lines.push(`Start: ${run.startPoint||'not entered'} | Direction: ${run.direction} | Run Photos: ${(run.photos||[]).length} | Reference Notes: ${run.runPhotos||'not entered'}`); run.doors.filter(doorNeedsWork).forEach(d=>lines.push(`- Door ${d.repairId}: ${buildIssueList(d).join(', ')}${d.photos?.length?' | Photos: '+d.photos.length:''}${d.photoNotes?' | Photo Notes: '+d.photoNotes:''}${d.notes?' | Notes: '+d.notes:''}`)); const caseParts=formatCasePartsText(run.caseComponents?.selectedParts||{}); if(caseParts.length){ lines.push('Case Components:'); lines.push(`Case: ${run.caseBrand||''} | Model: ${run.caseComponents?.model||'not entered'} | Serial: ${run.caseComponents?.serial||'not entered'} | Photos: ${(run.caseComponents?.photos||[]).length}`); caseParts.forEach(x=>lines.push(`- ${x}`)); } lines.push(''); }); state.audit.walkins.forEach(w=>{ lines.push(`${w.area} — ${w.code}: ${w.name||'Walk-In'}`); lines.push(`Brand: ${w.brand} | Model: ${w.model||'not entered'} | Serial: ${w.serial||'not entered'} | Photos: ${(w.photoFiles||[]).length} | Photo Notes: ${w.photos||'not entered'}`); Object.entries(w.selectedParts||{}).forEach(([c,q])=>lines.push(`- ${c} ${labelFor(c)} x${q}`)); if(w.notes) lines.push(`Notes: ${w.notes}`); lines.push(''); }); return lines.join('\n'); }
 
-function handleClick(e){ const btn=e.target.closest('button'); if(!btn) return; if(btn.dataset.qtyPlus){ adjustPartQty(btn,1); return; } if(btn.dataset.qtyMinus){ adjustPartQty(btn,-1); return; } const a=btn.dataset.action; if(a==='newAudit') newAudit(); if(a==='continueAudit'){ const saved=loadLocal(); if(!saved) return alert('No saved prototype audit found yet.'); state.audit=saved; showAreas(); } if(a==='viewSubmitted'||a==='report'){ if(!state.audit) state.audit=loadLocal(); if(!state.audit) return alert('No saved prototype audit found yet.'); showReport(); } if(a==='settings'){ alert('Settings are placeholder-only in this prototype.'); } if(a==='saveStore') saveStore(); if(a==='selectArea') showAreaEntry(btn.dataset.area); if(a==='backAreas') showAreas(); if(a==='createRun') createRunFromForm(); if(a==='saveWalkin') saveWalkin(); if(a==='copyPrev') copyPreviousDoor(); if(a==='markGood') markDoorGood(); if(a==='flagUrgent') flagUrgent(); if(a==='saveNext') saveDoorAndNext(); if(a==='prevDoor') prevDoor(); if(a==='sectionSummary'){ saveCurrentDoor(); showSummary(); } if(a==='addRun') showRun(getRun().area); if(a==='editDoor'){ state.currentDoorIndex=Number(btn.dataset.index); showDoor(); } if(a==='downloadJson') downloadJson(); if(a==='downloadEmail') downloadEmail(); if(a==='submitAudit') submitAudit(); if(a==='copyEmail') copyEmail(); if(a==='openEmail') openEmailDraft(); if(a==='showDatabase') showDatabaseOutline(); if(a==='startFreshAudit') startFreshAudit(); if(a==='continueEditing') continueEditing(); if(a==='resetDemo') resetDemo(); }
+function handleClick(e){ const btn=e.target.closest('button'); if(!btn) return; if(btn.dataset.qtyPlus){ adjustPartQty(btn,1); return; } if(btn.dataset.qtyMinus){ adjustPartQty(btn,-1); return; } const a=btn.dataset.action; if(a==='newAudit') newAudit(); if(a==='continueAudit'){ const saved=loadLocal(); if(!saved) return alert('No saved prototype audit found yet.'); state.audit=saved; showAreas(); } if(a==='viewSubmitted'||a==='report'){ if(!state.audit) state.audit=loadLocal(); if(!state.audit) return alert('No saved prototype audit found yet.'); showReport(); } if(a==='settings'){ alert('Settings are placeholder-only in this prototype.'); } if(a==='saveStore') saveStore(); if(a==='selectArea') showAreaEntry(btn.dataset.area); if(a==='backAreas') showAreas(); if(a==='createRun') createRunFromForm(); if(a==='saveWalkin') saveWalkin(); if(a==='copyPrev') copyPreviousDoor(); if(a==='markGood') markDoorGood(); if(a==='flagUrgent') flagUrgent(); if(a==='saveNext') saveDoorAndNext(); if(a==='prevDoor') prevDoor(); if(a==='sectionSummary'){ saveCurrentDoor(); showSummary(); } if(a==='addRun') showRun(getRun().area); if(a==='editDoor'){ state.currentDoorIndex=Number(btn.dataset.index); showDoor(); } if(a==='downloadEmail') downloadEmail(); if(a==='downloadDetailCsv') downloadAuditDetailCsv(); if(a==='downloadSummaryCsv') downloadPartsSummaryCsv(); if(a==='submitAudit') submitAudit(); if(a==='copyEmail') copyEmail(); if(a==='openEmail') openEmailDraft(); if(a==='showDatabase') showDatabaseOutline(); if(a==='startFreshAudit') startFreshAudit(); if(a==='continueEditing') continueEditing(); if(a==='resetDemo') resetDemo(); }
 async function handleChange(e){ if(e.target.matches('input[type="file"]')){ await handlePhotoInput(e.target); return; } const run=getRun(); if(!run) return; const door=run.doors[state.currentDoorIndex]; if(!door) return; if(e.target.matches('[data-part-qty]')){ door.selectedParts=collectCheckedParts('partsCatalog'); door.status='Checked'; saveLocal(); } if(e.target.matches('[data-field]')){ door[e.target.dataset.field]=e.target.value; door.status='Checked'; updatePill(door); saveLocal(); } }
 
 
@@ -318,7 +318,62 @@ function isIssue(field,value){ if(!value) return false; if(['doorNumber','repair
 function labelFor(field){ const labels={gasket:'Gaskets',handle:'Handles',hinges:'Hinge Sets',torqueRod:'Torque Rods / Closers',holdOpen:'Hold-Opens',alignment:'Door Alignment',fogging:'Glass Fogging',airLeak:'Air Leaks',heater:'Frame Heater Issues',moisture:'Dryer / Moisture Issues',curtain:'Curtains / Strips'}; const p=findPart(field); return p?p.name:(labels[field]||field); }
 function findPart(code){ for(const brand of Object.values(PART_CATALOG)){ for(const parts of Object.values(brand)){ const m=parts.find(p=>p.code===code); if(m) return m; } } return WALKIN_PARTS.find(p=>p.code===code)||CASE_PARTS.find(p=>p.code===code)||null; }
 function updatePill(d){ const pill=document.getElementById('doorStatusPill'); if(!pill) return; pill.className='pill'; if(d.urgency==='High'||d.urgency==='Food Safety Concern'){ pill.textContent=d.urgency; pill.classList.add('urgent'); } else if(d.status==='Checked'&&!doorNeedsWork(d)){ pill.textContent='Good'; pill.classList.add('good'); } else if(d.status==='Checked') pill.textContent='Needs Work'; else pill.textContent='Draft'; }
-function downloadJson(){ downloadFile(`store-${state.audit.store.storeNumber||'audit'}-refrigeration-report.json`, JSON.stringify(state.audit,null,2), 'application/json'); }
+
+
+function downloadAuditDetailCsv(){
+  const rows = buildExportDetailRows();
+  downloadFile(`CoolerIQ-${safeStoreFileName()}-audit-detail.csv`, toCsv(rows), 'text/csv');
+}
+function downloadPartsSummaryCsv(){
+  const rows = buildExportSummaryRows(buildExportDetailRows());
+  downloadFile(`CoolerIQ-${safeStoreFileName()}-parts-summary.csv`, toCsv(rows), 'text/csv');
+}
+function safeStoreFileName(){
+  const s=state.audit?.store||{};
+  return (s.storeNumber||'audit').toString().replace(/[^a-z0-9_-]/gi,'') || 'audit';
+}
+function buildExportDetailRows(){
+  const s=state.audit?.store||{};
+  const base={
+    StoreNumber:s.storeNumber||'', Chain:s.chain||'', StoreName:s.storeName||'', CityState:s.cityState||'',
+    TechName:s.techName||'', AuditDate:s.date||'', StoreContact:s.contact||''
+  };
+  const rows=[];
+  (state.audit?.runs||[]).forEach(run=>{
+    (run.doors||[]).forEach(d=>{
+      Object.entries(d.selectedParts||{}).forEach(([code,qty])=>{
+        if(Number(qty)>0) rows.push({...base, Area:run.area||'', AssetType:'Reach-In Door', Run:run.runCode||'', RunName:run.runName||'', Door:d.repairId||'', Brand:run.doorBrand||'', Model:run.doorModel||'', Serial:'', PartCode:code, PartName:labelFor(code), Qty:Number(qty), Unit:'Each', WidthSize:'', Color:'', HolePattern:'', Notes:d.notes||'', PhotoNotes:d.photoNotes||''});
+      });
+    });
+    Object.entries(run.caseComponents?.selectedParts||{}).forEach(([code,data])=>{
+      const qty=parseFloat(data.qty)||1;
+      rows.push({...base, Area:run.area||'', AssetType:'Case Component', Run:run.runCode||'', RunName:run.runName||'', Door:'', Brand:run.caseBrand||run.caseComponents?.brand||'', Model:run.caseComponents?.model||'', Serial:run.caseComponents?.serial||'', PartCode:code, PartName:labelFor(code), Qty:qty, Unit:(code==='T'||code==='HCB'||code==='HCW')?'Feet/Qty':'Qty', WidthSize:data.width||'', Color:data.color||'', HolePattern:data.hole||'', Notes:data.notes||'', PhotoNotes:run.caseComponents?.photoNotes||''});
+    });
+  });
+  (state.audit?.walkins||[]).forEach(w=>{
+    Object.entries(w.selectedParts||{}).forEach(([code,qty])=>{
+      if(Number(qty)>0) rows.push({...base, Area:w.area||'', AssetType:'Walk-In', Run:w.code||'', RunName:w.name||'', Door:'', Brand:w.brand||'', Model:w.model||'', Serial:w.serial||'', PartCode:code, PartName:labelFor(code), Qty:Number(qty), Unit:'Each', WidthSize:'', Color:'', HolePattern:'', Notes:w.notes||'', PhotoNotes:w.photos||''});
+    });
+  });
+  return rows.length?rows:[{...base, Area:'', AssetType:'', Run:'', RunName:'', Door:'', Brand:'', Model:'', Serial:'', PartCode:'', PartName:'No parts selected', Qty:0, Unit:'', WidthSize:'', Color:'', HolePattern:'', Notes:'', PhotoNotes:''}];
+}
+function buildExportSummaryRows(detailRows){
+  const map={};
+  detailRows.forEach(r=>{
+    if(!r.PartCode) return;
+    const key=[r.PartCode,r.PartName,r.Brand,r.Model,r.Unit,r.WidthSize,r.Color,r.HolePattern].join('|');
+    if(!map[key]) map[key]={PartCode:r.PartCode, PartName:r.PartName, Brand:r.Brand, Model:r.Model, Unit:r.Unit, WidthSize:r.WidthSize, Color:r.Color, HolePattern:r.HolePattern, TotalQty:0};
+    map[key].TotalQty += Number(r.Qty||0);
+  });
+  const rows=Object.values(map).sort((a,b)=>(a.PartCode||'').localeCompare(b.PartCode||''));
+  return rows.length?rows:[{PartCode:'', PartName:'No parts selected', Brand:'', Model:'', Unit:'', WidthSize:'', Color:'', HolePattern:'', TotalQty:0}];
+}
+function toCsv(rows){
+  const headers=Object.keys(rows[0]||{});
+  const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  return headers.join(',') + '\n' + rows.map(row=>headers.map(h=>esc(row[h])).join(',')).join('\n');
+}
+
 function downloadEmail(){ downloadFile(`store-${state.audit.store.storeNumber||'audit'}-email-draft.txt`, buildEmailDraft(), 'text/plain'); }
 function downloadFile(name, content, type){ const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
 function resetDemo(){ if(!confirm('Reset this prototype audit?')) return; localStorage.removeItem('coolerIQPrototypeV620'); state.audit=null; 

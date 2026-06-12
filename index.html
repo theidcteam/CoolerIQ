@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CoolerIQ v6.2.8 Audit Prototype</title>
+  <title>CoolerIQ v6.3.0 Audit Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -186,8 +186,8 @@
         <button class="primary" data-action="startFreshAudit">Start New Audit</button>
         <button data-action="continueEditing">Continue Editing This Audit</button>
         <button data-action="copyEmail">Copy Email Summary</button>
-        <button data-action="downloadJson">Download Report Data</button>
-        <button data-action="downloadEmail">Download Email Text</button>
+        
+        <button data-action="downloadDetailCsv">Download Audit Detail CSV</button><button data-action="downloadSummaryCsv">Download Parts Summary CSV</button><button data-action="downloadEmail">Download Email Text</button>
       </div>
     </section>
   </template>
@@ -200,7 +200,7 @@
         <h3>Email Draft</h3>
         <textarea id="emailDraft" readonly></textarea>
       </div>
-      <div class="actions"><button class="primary" data-action="submitAudit">Submit Audit</button><button data-action="copyEmail">Copy Email Summary</button><button data-action="openEmail">Open Email Draft</button><button data-action="downloadJson">Download Report Data</button><button data-action="downloadEmail">Download Email Text</button><button data-action="showDatabase">Database Outline</button><button data-action="resetDemo">Reset Prototype</button></div>
+      <div class="actions"><button class="primary" data-action="submitAudit">Submit Audit</button><button data-action="copyEmail">Copy Email Summary</button><button data-action="openEmail">Open Email Draft</button><button data-action="downloadDetailCsv">Download Audit Detail CSV</button><button data-action="downloadSummaryCsv">Download Parts Summary CSV</button><button data-action="downloadEmail">Download Email Text</button><button data-action="showDatabase">Database Outline</button><button data-action="resetDemo">Reset Prototype</button></div>
     </section>
   </template>
 
