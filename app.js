@@ -115,7 +115,19 @@ function showAreas(){
   });
 }
 function isWalkinArea(area){ return area === 'Walk-In Cooler' || area === 'Walk-In Freezer'; }
-function showAreaEntry(area){ state.currentArea=area; isWalkinArea(area) ? showWalkin(area) : showRun(area); }
+function showAreaEntry(area){
+  state.currentArea=area;
+  if(isWalkinArea(area)) return showWalkin(area);
+  const existingRuns=(state.audit?.runs||[]).filter(r=>r.area===area);
+  if(existingRuns.length){
+    const unfinished=existingRuns.find(r=>(r.doors||[]).some(d=>d.status==='Draft')) || existingRuns[existingRuns.length-1];
+    state.currentRunId=unfinished.id;
+    const nextIndex=(unfinished.doors||[]).findIndex(d=>d.status==='Draft');
+    state.currentDoorIndex=nextIndex>=0 ? nextIndex : 0;
+    return showDoor();
+  }
+  showRun(area);
+}
 
 function showRun(area){
   cloneTemplate('runTemplate'); document.getElementById('runTitle').textContent=`Create Refrigeration Run: ${area}`;
