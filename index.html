@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CoolerIQ v6.3.3 Audit Prototype</title>
+  <title>CoolerIQ v6.3.4 Audit Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -33,7 +33,7 @@
         <button class="home-tile" data-action="report"><span class="tile-icon">▥</span><span>Reports</span></button>
         <button class="home-tile" data-action="settings"><span class="tile-icon">⚙</span><span>Settings</span></button>
       </nav>
-      <div class="app-version">v6.3.3</div>
+      <div class="app-version">v6.3.4</div>
     </section>
   </template>
 
@@ -43,6 +43,7 @@
       <div class="grid two">
         <label>Store Number<input id="storeNumber" placeholder="Example: 4521" /></label>
         <label>Chain<select id="chain"><option>Walmart</option><option>Sam's Club</option><option>Kroger</option><option>Safeway</option><option>Other</option></select></label>
+        <label id="chainOtherWrap" class="hidden">Custom Chain Name<input id="chainOther" placeholder="Example: Harps, Aldi, Food Lion" /></label>
         <label>Store Name<input id="storeName" placeholder="Example: Walmart Supercenter" /></label>
         <label>Tech Name<input id="techName" placeholder="Audit tech name" /></label>
         <label>City / State<input id="cityState" placeholder="Fort Smith, AR" /></label>
@@ -202,7 +203,7 @@
         <h3>Email Draft</h3>
         <textarea id="emailDraft" readonly></textarea>
       </div>
-      <div class="actions"><button class="primary" data-action="submitAudit">Submit Audit</button><button data-action="copyEmail">Copy Email Summary</button><button data-action="openEmail">Open Email Draft</button><button data-action="downloadDetailCsv">Download Audit Detail CSV</button><button data-action="downloadSummaryCsv">Download Parts Summary CSV</button><button data-action="downloadEmail">Download Email Text</button><button data-action="showDatabase">Database Outline</button><button data-action="resetDemo">Reset Prototype</button></div>
+      <div class="actions"><button class="primary" data-action="submitAudit">Submit Audit</button><button data-action="copyEmail">Copy Email Summary</button><button data-action="openEmail">Open Email Draft</button><button data-action="downloadDetailCsv">Download Audit Detail CSV</button><button data-action="downloadSummaryCsv">Download Parts Summary CSV</button><button data-action="downloadEmail">Download Email Text</button><button data-action="showDatabase">Database Outline</button><button class="danger" data-action="deleteAudit">Delete Current Audit</button></div>
     </section>
   </template>
 

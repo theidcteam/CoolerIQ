@@ -137,3 +137,9 @@ label{display:grid;gap:7px;color:#eaf2f9;font-weight:800;font-size:13px}input,se
 /* v6.3.3 */
 .actions.split button[data-action="saveAudit"]{background:rgba(0,163,255,.16);border-color:rgba(0,163,255,.45)}
 .field-help{display:block;margin-top:.25rem;font-size:.72rem;color:rgba(216,233,242,.72);font-weight:600}
+
+/* v6.3.4 */
+.hidden{display:none!important}
+button.danger{background:linear-gradient(135deg,#b42318,#7a1010)!important;border-color:rgba(255,120,100,.65)!important;color:#fff!important}
+button.danger:hover{filter:brightness(1.08)}
+.report .actions button.danger{margin-left:auto}
