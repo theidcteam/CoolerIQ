@@ -67,7 +67,7 @@ const DEFAULT_DOOR = {
   selectedParts: {}, notes: '', photoNotes: '', status: 'Draft'
 };
 
-const state = { audit: null, currentArea: null, currentRunId: null, currentDoorIndex: 0, tempRunPhotos: [], tempCasePhotos: [], tempWalkinPhotos: [] };
+const state = { audit: null, currentArea: null, currentRunId: null, currentDoorIndex: 0, copiedDoorData: null, copiedDoorLabel: '', workingDoorIndex: 0, tempRunPhotos: [], tempCasePhotos: [], tempWalkinPhotos: [] };
 const app = document.getElementById('app');
 document.getElementById('homeBtn').addEventListener('click', showHome);
 app.addEventListener('click', handleClick);
@@ -134,6 +134,7 @@ function showAreaEntry(area){
     state.currentRunId=unfinished.id;
     const nextIndex=(unfinished.doors||[]).findIndex(d=>d.status==='Draft');
     state.currentDoorIndex=nextIndex>=0 ? nextIndex : 0;
+    state.workingDoorIndex=state.currentDoorIndex;
     return showDoor();
   }
   showRun(area);
@@ -167,7 +168,7 @@ function createRunFromForm(){
     photos:state.tempCasePhotos || []
   };
   const run={ id:String(Date.now()), type:'refrigeration-run', area:state.currentArea, runCode, runName:getVal('runName')||`${state.currentArea} Run ${runCode}`, doorCount, startPoint:getVal('startPoint'), direction:getVal('direction'), runPhotos:getVal('runPhotos'), photos:state.tempRunPhotos||[], doorBrand:getVal('doorBrand'), doorModel:getVal('doorModel'), caseBrand:getVal('caseBrand'), tempConcern:getVal('tempConcern'), caseComponents, runNotes:getVal('runNotes'), doors:Array.from({length:doorCount},(_,i)=>({...DEFAULT_DOOR, photos:[], doorNumber:i+1, repairId:`${runCode}-${String(i+1).padStart(2,'0')}`})) };
-  state.audit.runs.push(run); state.currentRunId=run.id; state.currentDoorIndex=0; saveLocal();
+  state.audit.runs.push(run); state.currentRunId=run.id; state.currentDoorIndex=0; state.workingDoorIndex=0; saveLocal();
   if(doorCount>0){ showDoor(); scrollToTop(); } else { showSummary(); scrollToTop(); }
 }
 
@@ -182,6 +183,19 @@ function saveWalkin(){
   state.audit.walkins.push(walkin); saveLocal(); showReport();
 }
 
+
+function updateDoorNavLabels(run){
+  const btn=document.getElementById('prevDoorBtn');
+  if(!btn || !run) return;
+  if(state.currentDoorIndex>0){
+    const prev=run.doors[state.currentDoorIndex-1];
+    btn.textContent=`Previous Door: ${prev.repairId}`;
+    btn.disabled=false;
+  } else {
+    btn.textContent='Previous Door';
+    btn.disabled=true;
+  }
+}
 function showDoor(){
   const run=getRun(); if(!run) return showAreas(); const door=run.doors[state.currentDoorIndex]; cloneTemplate('doorTemplate');
   document.getElementById('doorArea').textContent=run.area;
@@ -189,7 +203,7 @@ function showDoor(){
   document.getElementById('doorRun').textContent=`${run.runName} • Start: ${run.startPoint||'not entered'} • Direction: ${run.direction}`;
   document.getElementById('partsHint').textContent=`${run.doorBrand} ${run.doorModel} parts loaded. Use Generic when the door is unknown.`;
   document.querySelectorAll('[data-field]').forEach(input => input.value = door[input.dataset.field] ?? '');
-  renderPartsCatalog(run, door); renderPhotoPreview('doorPhotoPreview', door.photos || []); updatePill(door);
+  renderPartsCatalog(run, door); renderPhotoPreview('doorPhotoPreview', door.photos || []); updateDoorNavLabels(run); updatePill(door);
 }
 function renderPartsCatalog(run, door){ const parts=(PART_CATALOG[run.doorBrand]||{})[run.doorModel] || []; renderCheckboxParts('partsCatalog', parts, door.selectedParts||{}); }
 function renderCheckboxParts(containerId, parts, selected){
@@ -286,6 +300,7 @@ function saveDoorAndNext(){
   saveCurrentDoor();
   if(state.currentDoorIndex<run.doors.length-1){
     state.currentDoorIndex++;
+    state.workingDoorIndex=state.currentDoorIndex;
     saveLocal();
     showDoor();
     scrollToTop();
@@ -297,6 +312,7 @@ function saveDoorAndNext(){
     run.doorCount=nextNumber;
     run.doors.push({...DEFAULT_DOOR, photos:[], doorNumber:nextNumber, repairId:`${run.runCode}-${String(nextNumber).padStart(2,'0')}`});
     state.currentDoorIndex=run.doors.length-1;
+    state.workingDoorIndex=state.currentDoorIndex;
     saveLocal();
     showDoor();
     scrollToTop();
@@ -306,8 +322,45 @@ function saveDoorAndNext(){
 }
 function saveAuditOnly(){ saveCurrentDoor(); alert('Audit saved. You can continue this door later or use Next Door when ready.'); }
 function copyPreviousDoor(){ const run=getRun(); if(state.currentDoorIndex===0) return alert('This is the first door. Nothing to copy yet.'); const {doorNumber,repairId}=run.doors[state.currentDoorIndex]; run.doors[state.currentDoorIndex]={...run.doors[state.currentDoorIndex-1],doorNumber,repairId,status:'Checked'}; saveLocal(); showDoor(); }
-function markDoorGood(){ const run=getRun(); const {doorNumber,repairId}=run.doors[state.currentDoorIndex]; run.doors[state.currentDoorIndex]={...DEFAULT_DOOR,doorNumber,repairId,status:'Checked'}; saveLocal(); showDoor(); }
+function markDoorGood(){
+  const run=getRun();
+  if(!run) return;
+  const {doorNumber,repairId}=run.doors[state.currentDoorIndex];
+  run.doors[state.currentDoorIndex]={...DEFAULT_DOOR,doorNumber,repairId,status:'Checked'};
+  saveLocal();
+  if(state.currentDoorIndex<run.doors.length-1){
+    state.currentDoorIndex++;
+    state.workingDoorIndex=state.currentDoorIndex;
+    saveLocal();
+    showDoor();
+    scrollToTop();
+    return;
+  }
+  const addMore = confirm('Door marked good. You are at the last planned door for this run. Add another door?');
+  if(addMore){
+    const nextNumber=(run.doors?.length||0)+1;
+    run.doorCount=nextNumber;
+    run.doors.push({...DEFAULT_DOOR, photos:[], doorNumber:nextNumber, repairId:`${run.runCode}-${String(nextNumber).padStart(2,'0')}`});
+    state.currentDoorIndex=run.doors.length-1;
+    state.workingDoorIndex=state.currentDoorIndex;
+    saveLocal();
+    showDoor();
+    scrollToTop();
+  } else {
+    showSummary();
+    scrollToTop();
+  }
+}
 function flagUrgent(){ const d=getRun().doors[state.currentDoorIndex]; d.urgency='Food Safety Concern'; d.status='Checked'; saveLocal(); showDoor(); }
+function currentDoor(){
+  saveCurrentDoor();
+  const run=getRun();
+  if(!run) return;
+  const idx=Math.min(Math.max(state.workingDoorIndex||0,0), Math.max(run.doors.length-1,0));
+  state.currentDoorIndex=idx;
+  showDoor();
+  scrollToTop();
+}
 function prevDoor(){ saveCurrentDoor(); if(state.currentDoorIndex>0) state.currentDoorIndex--; showDoor(); }
 function getRun(){ return state.audit?.runs.find(r=>r.id===state.currentRunId) || state.audit?.runs[state.audit.runs.length-1]; }
 
@@ -342,7 +395,83 @@ function backToAreasPrompt(){
   scrollToTop();
   showAreas();
 }
-function handleClick(e){ const btn=e.target.closest('button'); if(!btn) return; if(btn.dataset.qtyPlus){ adjustPartQty(btn,1); return; } if(btn.dataset.qtyMinus){ adjustPartQty(btn,-1); return; } const a=btn.dataset.action; if(a==='newAudit') newAudit(); if(a==='continueAudit'){ const saved=loadLocal(); if(!saved) return alert('No saved prototype audit found yet.'); state.audit=saved; showAreas(); } if(a==='viewSubmitted'||a==='report'){ if(!state.audit) state.audit=loadLocal(); if(!state.audit) return alert('No saved prototype audit found yet.'); showReport(); } if(a==='settings'){ alert('Settings are placeholder-only in this prototype.'); } if(a==='saveStore') saveStore(); if(a==='selectArea') showAreaEntry(btn.dataset.area); if(a==='backAreas') showAreas(); if(a==='backToAreasPrompt') backToAreasPrompt(); if(a==='createRun') createRunFromForm(); if(a==='saveWalkin') saveWalkin(); if(a==='copyPrev') copyPreviousDoor(); if(a==='markGood') markDoorGood(); if(a==='flagUrgent') flagUrgent(); if(a==='saveNext'||a==='nextDoor') saveDoorAndNext(); if(a==='saveAudit') saveAuditOnly(); if(a==='prevDoor') prevDoor(); if(a==='sectionSummary'){ saveCurrentDoor(); showSummary(); } if(a==='addRun') showRun(getRun().area); if(a==='editDoor'){ state.currentDoorIndex=Number(btn.dataset.index); showDoor(); } if(a==='downloadEmail') downloadEmail(); if(a==='downloadDetailCsv') downloadAuditDetailCsv(); if(a==='downloadSummaryCsv') downloadPartsSummaryCsv(); if(a==='submitAudit') submitAudit(); if(a==='copyEmail') copyEmail(); if(a==='openEmail') openEmailDraft(); if(a==='showDatabase') showDatabaseOutline(); if(a==='startFreshAudit') startFreshAudit(); if(a==='continueEditing') continueEditing(); if(a==='deleteAudit') deleteCurrentAudit(); if(a==='resetDemo') resetDemo(); }
+
+function editStoreInfo(){
+  saveLocal();
+  showStore();
+  scrollToTop();
+}
+function deleteCurrentSection(){
+  if(!state.audit) return;
+  const run=getRun();
+  const area=state.currentArea || run?.area || 'current section';
+  const label=run ? `${run.area} Run ${run.runCode}` : area;
+  const ok=confirm(`Delete ${label}?\n\nThis will remove this section/run, including doors, parts, notes, and photos for this section only.\n\nOther store areas will not be deleted.\n\nThis cannot be undone.`);
+  if(!ok) return;
+  if(run){
+    state.audit.runs = (state.audit.runs||[]).filter(r=>r.id!==run.id);
+  } else if(isWalkinArea(area)){
+    state.audit.walkins = (state.audit.walkins||[]).filter(w=>w.area!==area);
+  }
+  state.currentRunId=null;
+  state.currentDoorIndex=0;
+  saveLocal();
+  showAreas();
+  scrollToTop();
+}
+function deleteCurrentDoor(){
+  const run=getRun();
+  if(!run) return;
+  const door=run.doors[state.currentDoorIndex];
+  if(!door) return;
+  const ok=confirm(`Delete Door ${door.repairId}?\n\nThis will remove this door, its parts, notes, and photos.\n\nThis cannot be undone.`);
+  if(!ok) return;
+  run.doors.splice(state.currentDoorIndex,1);
+  run.doorCount=run.doors.length;
+  if(state.currentDoorIndex>=run.doors.length) state.currentDoorIndex=Math.max(0, run.doors.length-1);
+  state.workingDoorIndex=Math.min(state.workingDoorIndex||0, Math.max(run.doors.length-1,0));
+  saveLocal();
+  if(run.doors.length) {
+    showDoor();
+    scrollToTop();
+  } else {
+    showSummary();
+    scrollToTop();
+  }
+}
+
+
+
+
+function copyThisDoor(){
+  const run=getRun();
+  if(!run) return;
+  const door=run.doors[state.currentDoorIndex];
+  if(!door) return;
+  const copy=JSON.parse(JSON.stringify(door));
+  copy.photos=[]; // do not copy photos
+  state.copiedDoorData=copy;
+  state.copiedDoorLabel=door.repairId || `Door ${state.currentDoorIndex+1}`;
+  alert(`${state.copiedDoorLabel} copied.`);
+}
+function pasteCopiedDoor(){
+  if(!state.copiedDoorData){ alert('No copied door available.'); return; }
+  const run=getRun();
+  if(!run) return;
+  const current=run.doors[state.currentDoorIndex];
+  if(!current) return;
+  const keepDoorNumber=current.doorNumber;
+  const keepRepairId=current.repairId;
+  const pasted=JSON.parse(JSON.stringify(state.copiedDoorData));
+  pasted.doorNumber=keepDoorNumber;
+  pasted.repairId=keepRepairId;
+  pasted.photos=[]; // never paste photos
+  run.doors[state.currentDoorIndex]=pasted;
+  saveLocal();
+  showDoor();
+  scrollToTop();
+}
+function handleClick(e){ const btn=e.target.closest('button'); if(!btn) return; if(btn.dataset.qtyPlus){ adjustPartQty(btn,1); return; } if(btn.dataset.qtyMinus){ adjustPartQty(btn,-1); return; } const a=btn.dataset.action; if(a==='newAudit') newAudit(); if(a==='continueAudit'){ const saved=loadLocal(); if(!saved) return alert('No saved prototype audit found yet.'); state.audit=saved; showAreas(); } if(a==='viewSubmitted'||a==='report'){ if(!state.audit) state.audit=loadLocal(); if(!state.audit) return alert('No saved prototype audit found yet.'); showReport(); } if(a==='settings'){ alert('Settings are placeholder-only in this prototype.'); } if(a==='editStoreInfo') editStoreInfo(); if(a==='deleteSection') deleteCurrentSection(); if(a==='deleteDoor') deleteCurrentDoor(); if(a==='saveStore') saveStore(); if(a==='selectArea') showAreaEntry(btn.dataset.area); if(a==='backAreas') showAreas(); if(a==='backToAreasPrompt') backToAreasPrompt(); if(a==='createRun') createRunFromForm(); if(a==='saveWalkin') saveWalkin(); if(a==='copyPrev') copyThisDoor(); if(a==='markGood') markDoorGood(); if(a==='flagUrgent') flagUrgent(); if(a==='saveNext'||a==='nextDoor') saveDoorAndNext(); if(a==='saveAudit') saveAuditOnly(); if(a==='prevDoor') prevDoor(); if(a==='currentDoor') currentDoor(); if(a==='copyThisDoor') copyThisDoor(); if(a==='pasteCopiedDoor') pasteCopiedDoor(); if(a==='sectionSummary'){ saveCurrentDoor(); showSummary(); } if(a==='addRun') showRun(getRun().area); if(a==='editDoor'){ state.currentDoorIndex=Number(btn.dataset.index); showDoor(); } if(a==='downloadEmail') downloadEmail(); if(a==='downloadDetailCsv') downloadAuditDetailCsv(); if(a==='downloadSummaryCsv') downloadPartsSummaryCsv(); if(a==='submitAudit') submitAudit(); if(a==='copyEmail') copyEmail(); if(a==='openEmail') openEmailDraft(); if(a==='showDatabase') showDatabaseOutline(); if(a==='startFreshAudit') startFreshAudit(); if(a==='continueEditing') continueEditing(); if(a==='deleteAudit') deleteCurrentAudit(); if(a==='resetDemo') resetDemo(); }
 async function handleChange(e){ if(e.target.matches('input[type="file"]')){ await handlePhotoInput(e.target); return; } const run=getRun(); if(!run) return; const door=run.doors[state.currentDoorIndex]; if(!door) return; if(e.target.matches('[data-part-qty]')){ door.selectedParts=collectCheckedParts('partsCatalog'); door.status='Checked'; saveLocal(); } if(e.target.matches('[data-field]')){ door[e.target.dataset.field]=e.target.value; door.status='Checked'; updatePill(door); saveLocal(); } }
 
 

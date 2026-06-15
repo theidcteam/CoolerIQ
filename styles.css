@@ -147,3 +147,20 @@ button.danger:hover{filter:brightness(1.08)}
 /* v6.3.5 */
 button.secondary{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22)}
 .actions.split button[data-action="backToAreasPrompt"]{flex-basis:100%;margin-top:.25rem}
+
+/* v6.3.6 edit/delete controls */
+.header-actions{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:flex-end}
+button.danger-light{background:rgba(180,35,24,.16)!important;border-color:rgba(255,120,100,.5)!important;color:#ffd9d4!important}
+button.danger-light:hover{filter:brightness(1.08)}
+@media(max-width:720px){
+  .header-actions{width:100%;justify-content:flex-start}
+}
+
+/* v6.3.7 */
+.actions.split button[data-action="currentDoor"]{background:rgba(107,214,58,.16);border-color:rgba(107,214,58,.45);color:#dfffd2}
+
+/* v6.3.9 copy/paste door fix */
+button[data-action="pasteCopiedDoor"]{background:rgba(107,214,58,.14);border-color:rgba(107,214,58,.42)}
+
+/* v6.4.0 */
+#prevDoorBtn:disabled{opacity:.45;cursor:not-allowed}

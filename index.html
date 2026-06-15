@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CoolerIQ v6.3.5 Audit Prototype</title>
+  <title>CoolerIQ v6.4.0 Audit Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img src="assets/cooleriq-logo-reversed.png" alt="CoolerIQ" />
         <div>
           <div class="eyebrow">Field Audit Prototype</div>
-          <h1>Know Every Door</h1>
+          <h1>Know Every Door</h1><div id="copiedDoorIndicator" class="muted"></div>
         </div>
       </div>
       <button class="ghost small" id="homeBtn">Home</button>
@@ -33,7 +33,7 @@
         <button class="home-tile" data-action="report"><span class="tile-icon">▥</span><span>Reports</span></button>
         <button class="home-tile" data-action="settings"><span class="tile-icon">⚙</span><span>Settings</span></button>
       </nav>
-      <div class="app-version">v6.3.5</div>
+      <div class="app-version">v6.4.0</div>
     </section>
   </template>
 
@@ -61,7 +61,10 @@
     <section class="card">
       <div class="section-head">
         <div><h2>Select Area</h2><p class="muted" id="storeLine"></p></div>
-        <button data-action="report">View Report</button>
+        <div class="header-actions">
+          <button data-action="editStoreInfo">Edit Store Information</button>
+          <button data-action="report">View Report</button>
+        </div>
       </div>
       <div class="area-grid" id="areaGrid"></div>
     </section>
@@ -126,6 +129,7 @@
       <label>Walk-In Notes<textarea id="walkinNotes" placeholder="Door condition, battens, closer, leaks, gasket notes..."></textarea></label>
       <div class="actions">
         <button data-action="backToAreasPrompt">Back to Area Selection</button>
+        <button class="danger-light" data-action="deleteSection">Delete Current Section</button>
         <button class="primary" data-action="saveWalkin">Save Walk-In Audit</button>
       </div>
     </section>
@@ -138,7 +142,8 @@
         <div class="pill" id="doorStatusPill">Draft</div>
       </div>
       <div class="quick-actions">
-        <button data-action="copyPrev">Copy Previous Door</button>
+        <button data-action="copyThisDoor">Copy This Door</button>
+        <button data-action="pasteCopiedDoor">Paste Copied Door</button>
         <button data-action="markGood">Mark Good</button>
         <button data-action="flagUrgent">Flag Urgent</button>
       </div>
@@ -152,10 +157,13 @@
       <div id="doorPhotoPreview" class="photo-grid wide"></div>
       <label>Door Notes<textarea data-field="notes" placeholder="Measurements, special notes, damage details..."></textarea></label>
       <div class="actions split">
-        <button data-action="prevDoor">Previous</button>
+        <button id="prevDoorBtn" data-action="prevDoor">Previous Door</button>
+        <button data-action="currentDoor">Current Door</button>
         <button data-action="sectionSummary">Run Summary</button>
         <button data-action="saveAudit">Save Audit</button>
+        <button class="danger-light" data-action="deleteDoor">Delete This Door</button>
         <button class="primary" data-action="nextDoor">Next Door</button>
+        <button class="danger-light" data-action="deleteSection">Delete Current Section</button>
         <button class="secondary" data-action="backToAreasPrompt">Back to Area Selection</button>
       </div>
     </section>
