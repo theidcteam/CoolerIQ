@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CoolerIQ v6.3.4 Audit Prototype</title>
+  <title>CoolerIQ v6.3.5 Audit Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -33,7 +33,7 @@
         <button class="home-tile" data-action="report"><span class="tile-icon">▥</span><span>Reports</span></button>
         <button class="home-tile" data-action="settings"><span class="tile-icon">⚙</span><span>Settings</span></button>
       </nav>
-      <div class="app-version">v6.3.4</div>
+      <div class="app-version">v6.3.5</div>
     </section>
   </template>
 
@@ -97,7 +97,7 @@
       <div id="casePhotoPreview" class="photo-grid wide"></div>
       <label>Run Notes<textarea id="runNotes" placeholder="Overall condition, location notes, fixture notes..."></textarea></label>
       <div class="actions">
-        <button data-action="backAreas">Back</button>
+        <button data-action="backToAreasPrompt">Back to Area Selection</button>
         <button class="primary" data-action="createRun">Create Door Run</button>
       </div>
     </section>
@@ -125,7 +125,7 @@
       </div>
       <label>Walk-In Notes<textarea id="walkinNotes" placeholder="Door condition, battens, closer, leaks, gasket notes..."></textarea></label>
       <div class="actions">
-        <button data-action="backAreas">Back</button>
+        <button data-action="backToAreasPrompt">Back to Area Selection</button>
         <button class="primary" data-action="saveWalkin">Save Walk-In Audit</button>
       </div>
     </section>
@@ -156,6 +156,7 @@
         <button data-action="sectionSummary">Run Summary</button>
         <button data-action="saveAudit">Save Audit</button>
         <button class="primary" data-action="nextDoor">Next Door</button>
+        <button class="secondary" data-action="backToAreasPrompt">Back to Area Selection</button>
       </div>
     </section>
   </template>

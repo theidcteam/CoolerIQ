@@ -143,3 +143,7 @@ label{display:grid;gap:7px;color:#eaf2f9;font-weight:800;font-size:13px}input,se
 button.danger{background:linear-gradient(135deg,#b42318,#7a1010)!important;border-color:rgba(255,120,100,.65)!important;color:#fff!important}
 button.danger:hover{filter:brightness(1.08)}
 .report .actions button.danger{margin-left:auto}
+
+/* v6.3.5 */
+button.secondary{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22)}
+.actions.split button[data-action="backToAreasPrompt"]{flex-basis:100%;margin-top:.25rem}
