@@ -164,3 +164,6 @@ button[data-action="pasteCopiedDoor"]{background:rgba(107,214,58,.14);border-col
 
 /* v6.4.0 */
 #prevDoorBtn:disabled{opacity:.45;cursor:not-allowed}
+
+/* v6.4.1 case components standalone workflow */
+button[data-action="startCaseAudit"]{border-color:rgba(107,214,58,.35)}

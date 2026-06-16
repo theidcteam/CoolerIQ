@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CoolerIQ v6.4.0 Audit Prototype</title>
+  <title>CoolerIQ v6.4.1 Audit Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -33,7 +33,7 @@
         <button class="home-tile" data-action="report"><span class="tile-icon">▥</span><span>Reports</span></button>
         <button class="home-tile" data-action="settings"><span class="tile-icon">⚙</span><span>Settings</span></button>
       </nav>
-      <div class="app-version">v6.4.0</div>
+      <div class="app-version">v6.4.1</div>
     </section>
   </template>
 
@@ -70,34 +70,35 @@
     </section>
   </template>
 
-  <template id="runTemplate">
+  <template id="workTypeTemplate">
     <section class="card">
-      <h2 id="runTitle">Create Refrigeration Run</h2>
-      <p class="muted">Use this for one lineup/fixture. Capture doors, case components, photos, measurements, and location notes in one pass.</p>
+      <div class="section-head">
+        <div><h2 id="workTypeTitle">Select Audit Type</h2><p class="muted">Choose what you want to audit in this area.</p></div>
+        <button data-action="backToAreasPrompt">Back to Area Selection</button>
+      </div>
+      <div class="area-grid">
+        <button data-action="startDoorRun"><strong>Refrigeration Door Run</strong><span>Create or resume reach-in door audit</span></button>
+        <button data-action="startCaseAudit"><strong>Case Components</strong><span>Trim, honeycomb, deck pans, night shades, case ends</span></button>
+      </div>
+    </section>
+  </template>
+
+  <template id="caseTemplate">
+    <section class="card">
+      <div class="section-head">
+        <div><h2 id="caseTitle">Case Components Audit</h2><p class="muted">Use this section for trim, honeycomb, deck pans, night shades, case ends, covers, and other case parts.</p></div>
+        <button data-action="backToAreasPrompt">Back to Area Selection</button>
+      </div>
       <div class="grid two">
-        <label>Run ID<select id="runCode"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></label>
-        <label>Run Name<input id="runName" placeholder="Example: Frozen Aisle 12 North Side" /></label>
-        <label>Door Count<input id="doorCount" type="number" min="0" max="300" value="12" /><span class="field-help">Estimate only. Extra doors can be added later.</span></label>
-        <label>Start Point<input id="startPoint" placeholder="Example: Starting near bakery end" /></label>
-        <label>Direction<select id="direction"><option>Left to Right</option><option>Right to Left</option><option>Front to Back</option><option>Back to Front</option><option>Custom / See Notes</option></select></label>
-        <label>Run Reference Photo Notes<input id="runPhotos" placeholder="Wide photo showing where this run starts" /></label>
-        <label>Run Reference Photos<input id="runPhotoInput" type="file" accept="image/*" capture="environment" multiple /></label>
-        <div id="runPhotoPreview" class="photo-grid wide"></div>
-        <label>Door Brand<select id="doorBrand"><option>Anthony</option><option>Hussmann</option><option>Styleline</option><option>Generic</option></select></label>
-        <label>Door Model<select id="doorModel"></select></label>
-        <label>Case Brand<select id="caseBrand"><option>Hillphoenix</option><option>Hussmann</option><option>Tyler</option><option>Zero Zone</option><option>Kysor Warren</option><option>Other</option><option>Unknown</option></select></label>
-        <label>Temperature Concern<select id="tempConcern"><option>No</option><option>Yes</option><option>Unknown</option></select></label>
-        <label>Case Model Number<input id="caseModel" placeholder="Model number for case/fixture" /></label>
-        <label>Case Serial Number<input id="caseSerial" placeholder="Serial number for case/fixture" /></label>
+        <label>Case Audit ID<select id="caseCode"><option>C-1</option><option>C-2</option><option>C-3</option><option>C-4</option></select></label>
+        <label>Location / Description<input id="caseName" placeholder="Example: Frozen coffin cases / bakery case line" /></label>
+        <label>Case Brand<select id="caseBrandStandalone"><option>Hillphoenix</option><option>Hussmann</option><option>Tyler</option><option>Zero Zone</option><option>Kysor Warren</option><option>Other</option><option>Unknown</option></select></label>
+        <label>Case Model Number<input id="caseModelStandalone" placeholder="Model number" /></label>
+        <label>Case Serial Number<input id="caseSerialStandalone" placeholder="Serial number" /></label>
+        <label>Case Component Photo Notes<input id="casePhotoNotesStandalone" placeholder="Photos, measurements, model tag, damage..." /></label>
+        <label>Case Component Photos<input id="casePhotoInputStandalone" type="file" accept="image/*" capture="environment" multiple /></label>
+        <div id="casePhotoPreviewStandalone" class="photo-grid wide"></div>
       </div>
-      <div class="parts-panel">
-        <h3>Case Components Needed</h3>
-        <p class="muted">Use this for trim, corners, floor railing, deck pans, honeycomb, night shades, case ends, and miscellaneous case parts. Measurements and photos are important.</p>
-        <div id="casePartsCatalog"></div>
-      </div>
-      <label>Case Component Photo Notes<input id="casePhotoNotes" placeholder="Photo notes for trim, honeycomb, model tag, damage, measurements..." /></label>
-      <label>Case Component Photos<input id="casePhotoInput" type="file" accept="image/*" capture="environment" multiple /></label>
-      <div id="casePhotoPreview" class="photo-grid wide"></div>
       <label>Run Notes<textarea id="runNotes" placeholder="Overall condition, location notes, fixture notes..."></textarea></label>
       <div class="actions">
         <button data-action="backToAreasPrompt">Back to Area Selection</button>
