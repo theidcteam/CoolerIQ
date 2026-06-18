@@ -75,7 +75,13 @@ app.addEventListener('change', handleChange);
 app.addEventListener('input', handleChange);
 
 function cloneTemplate(id){ app.innerHTML=''; app.appendChild(document.getElementById(id).content.cloneNode(true)); }
-function saveLocal(){
+function ensureAuditShape(){
+  if(!state.audit) return;
+  if(!Array.isArray(state.audit.runs)) state.audit.runs=[];
+  if(!Array.isArray(state.audit.walkins)) state.audit.walkins=[];
+  if(!Array.isArray(state.audit.cases)) state.audit.cases=[];
+}
+function saveLocal(){ ensureAuditShape();
   if(!state.audit) return;
   try {
     const lightweight = JSON.parse(JSON.stringify(state.audit, (key, value)=>{
@@ -88,7 +94,7 @@ function saveLocal(){
   }
 }
 function loadLocal(){ try { return JSON.parse(localStorage.getItem('coolerIQPrototypeV620') || 'null'); } catch { return null; } }
-function newAudit(){ state.audit = { id: Date.now(), createdAt: new Date().toISOString(), store:{}, runs:[], walkins:[], version:'6.2.0' }; saveLocal(); showStore(); }
+function newAudit(){ state.audit = { id: Date.now(), createdAt: new Date().toISOString(), store:{}, runs:[], walkins:[], cases:[], version:'6.4.1h' }; saveLocal(); showStore(); }
 function showHome(){ cloneTemplate('homeTemplate'); }
 
 function showStore(){
@@ -140,15 +146,72 @@ function showAreaEntry(area){
   showRun(area);
 }
 
+
+function showCaseComponentsAudit(){
+  ensureAuditShape();
+  cloneTemplate('caseComponentsTemplate');
+  state.tempCasePhotos=[];
+  const existing=(state.audit.cases||[])[0];
+  renderCaseParts('casePartsCatalogStandalone', existing?.selectedParts||{});
+  if(existing){
+    setVal('caseCode', existing.code);
+    setVal('caseName', existing.name);
+    setVal('caseBrandStandalone', existing.brand);
+    setVal('caseModelStandalone', existing.model);
+    setVal('caseSerialStandalone', existing.serial);
+    setVal('casePhotoNotesStandalone', existing.photoNotes);
+    setVal('caseNotesStandalone', existing.notes);
+    state.tempCasePhotos=existing.photos||[];
+    renderPhotoPreview('casePhotoPreviewStandalone', state.tempCasePhotos);
+  }
+  scrollToTop();
+}
+function saveCaseComponentsAudit(){
+  ensureAuditShape();
+  const selected=collectCaseParts('casePartsCatalogStandalone');
+  const code=getVal('caseCode')||'C-1';
+  const existing=(state.audit.cases||[]).find(c=>c.code===code);
+  const record={
+    id: existing?.id || String(Date.now()),
+    type:'case-components',
+    area:'Case Components',
+    code,
+    name:getVal('caseName'),
+    brand:getVal('caseBrandStandalone'),
+    model:getVal('caseModelStandalone'),
+    serial:getVal('caseSerialStandalone'),
+    selectedParts:selected,
+    photoNotes:getVal('casePhotoNotesStandalone'),
+    photos:state.tempCasePhotos||[],
+    notes:getVal('caseNotesStandalone')
+  };
+  if(existing) Object.assign(existing, record);
+  else state.audit.cases.push(record);
+  saveLocal();
+  showAreas();
+  scrollToTop();
+}
+function deleteCaseComponentsAudit(){
+  ensureAuditShape();
+  const code=getVal('caseCode')||'C-1';
+  const ok=confirm(`Delete Case Components ${code}?\n\nThis will remove this case component audit, including parts, notes, and photos.\n\nThis cannot be undone.`);
+  if(!ok) return;
+  state.audit.cases=(state.audit.cases||[]).filter(c=>c.code!==code);
+  saveLocal();
+  showAreas();
+  scrollToTop();
+}
 function showRun(area){
+  if(area==='Case Components') return showCaseComponentsAudit();
   cloneTemplate('runTemplate'); document.getElementById('runTitle').textContent= area==='Case Components' ? 'Create Case Components Audit' : `Create Refrigeration Run: ${area}`;
+  const createBtn=document.querySelector('[data-action="createRun"]');
+  if(createBtn) createBtn.textContent = area==='Case Components' ? 'Save to Audit' : 'Create Door Run';
   state.tempRunPhotos=[]; state.tempCasePhotos=[];
   renderModelOptions(); document.getElementById('doorBrand').addEventListener('change', renderModelOptions);
-  renderCaseParts('casePartsCatalog', {});
   const nextCode = String.fromCharCode(65 + state.audit.runs.length);
   setVal('runCode', nextCode <= 'H' ? nextCode : 'A');
   const previous=[...state.audit.runs].reverse().find(r=>r.area===area) || state.audit.runs[state.audit.runs.length-1];
-  if(previous){ ['doorBrand','doorModel','caseBrand','tempConcern','direction'].forEach(id=>setVal(id,previous[id])); renderModelOptions(); setVal('doorModel', previous.doorModel); }
+  if(previous){ ['doorBrand','doorModel','tempConcern','direction'].forEach(id=>setVal(id,previous[id])); renderModelOptions(); setVal('doorModel', previous.doorModel); }
 }
 function renderModelOptions(){
   const brand=getVal('doorBrand') || 'Anthony'; const select=document.getElementById('doorModel'); if(!select) return;
@@ -159,15 +222,7 @@ function createRunFromForm(){
   if(!state.audit){ alert('No active audit found. Start a new audit first.'); return; }
   const doorCount=Math.max(0,Math.min(300,parseInt(getVal('doorCount'),10)||0));
   const runCode=getVal('runCode')||'A';
-  const caseComponents = {
-    brand:getVal('caseBrand'),
-    model:getVal('caseModel'),
-    serial:getVal('caseSerial'),
-    selectedParts:collectCaseParts('casePartsCatalog'),
-    photoNotes:getVal('casePhotoNotes'),
-    photos:state.tempCasePhotos || []
-  };
-  const run={ id:String(Date.now()), type:'refrigeration-run', area:state.currentArea, runCode, runName:getVal('runName')||(state.currentArea==='Case Components' ? `Case Components ${runCode}` : `${state.currentArea} Run ${runCode}`), doorCount, startPoint:getVal('startPoint'), direction:getVal('direction'), runPhotos:getVal('runPhotos'), photos:state.tempRunPhotos||[], doorBrand:getVal('doorBrand'), doorModel:getVal('doorModel'), caseBrand:getVal('caseBrand'), tempConcern:getVal('tempConcern'), caseComponents, runNotes:getVal('runNotes'), doors:Array.from({length:doorCount},(_,i)=>({...DEFAULT_DOOR, photos:[], doorNumber:i+1, repairId:`${runCode}-${String(i+1).padStart(2,'0')}`})) };
+  const run={ id:String(Date.now()), type:'refrigeration-run', area:state.currentArea, runCode, runName:getVal('runName')||(state.currentArea==='Case Components' ? `Case Components ${runCode}` : `${state.currentArea} Run ${runCode}`), doorCount, startPoint:getVal('startPoint'), direction:getVal('direction'), runPhotos:getVal('runPhotos'), photos:state.tempRunPhotos||[], doorBrand:getVal('doorBrand'), doorModel:getVal('doorModel'), caseBrand:'', tempConcern:getVal('tempConcern'), caseComponents:{selectedParts:{}}, runNotes:getVal('runNotes'), doors:Array.from({length:doorCount},(_,i)=>({...DEFAULT_DOOR, photos:[], doorNumber:i+1, repairId:`${runCode}-${String(i+1).padStart(2,'0')}`})) };
   state.audit.runs.push(run); state.currentRunId=run.id; state.currentDoorIndex=0; state.workingDoorIndex=0; saveLocal();
   if(doorCount>0){ showDoor(); scrollToTop(); } else { showSummary(); scrollToTop(); }
 }
@@ -273,6 +328,7 @@ async function handlePhotoInput(input){
   if(input.id==='storePhotoInput'){ state.audit.store.photos=mergePhotos(state.audit.store.photos, processed); renderPhotoPreview('storePhotoPreview', state.audit.store.photos); }
   if(input.id==='runPhotoInput'){ state.tempRunPhotos=mergePhotos(state.tempRunPhotos, processed); renderPhotoPreview('runPhotoPreview', state.tempRunPhotos); }
   if(input.id==='casePhotoInput'){ state.tempCasePhotos=mergePhotos(state.tempCasePhotos, processed); renderPhotoPreview('casePhotoPreview', state.tempCasePhotos); }
+  if(input.id==='casePhotoInputStandalone'){ state.tempCasePhotos=mergePhotos(state.tempCasePhotos, processed); renderPhotoPreview('casePhotoPreviewStandalone', state.tempCasePhotos); }
   if(input.id==='doorPhotoInput'){ const d=getRun()?.doors[state.currentDoorIndex]; if(d){ d.photos=mergePhotos(d.photos, processed); renderPhotoPreview('doorPhotoPreview', d.photos); } }
   if(input.id==='walkinPhotoInput'){ state.tempWalkinPhotos=mergePhotos(state.tempWalkinPhotos, processed); renderPhotoPreview('walkinPhotoPreview', state.tempWalkinPhotos); }
   input.value='';
@@ -379,6 +435,7 @@ function showReport(){
     <h4>Case Components</h4><p class="muted">${escapeHtml(run.caseBrand||'Case')} • Model: ${escapeHtml(run.caseComponents?.model||'not entered')} • Serial: ${escapeHtml(run.caseComponents?.serial||'not entered')} • Case photos: ${(run.caseComponents?.photos||[]).length}</p><ul>${caseRows||'<li>No case components selected.</li>'}</ul>`;
     content.appendChild(block);
   });
+  (state.audit.cases||[]).forEach(c=>{ const block=document.createElement('div'); block.className='report-block'; block.innerHTML=`<h3>${c.code} — ${escapeHtml(c.name||'Case Components')}</h3><p class="muted">${escapeHtml(c.brand||'Case')} • Model: ${escapeHtml(c.model||'not entered')} • Serial: ${escapeHtml(c.serial||'not entered')} • Photos: ${(c.photos||[]).length}</p><ul>${formatCasePartsHtml(c.selectedParts||{})||'<li>No case components selected.</li>'}</ul>${c.notes?`<p>${escapeHtml(c.notes)}</p>`:''}`; content.appendChild(block); });
   state.audit.walkins.forEach(w=>{ const block=document.createElement('div'); block.className='report-block'; block.innerHTML=`<h3>${w.area}: ${w.code} — ${escapeHtml(w.name||'Walk-In')}</h3><p class="muted">${w.brand} • Model: ${escapeHtml(w.model||'not entered')} • Serial: ${escapeHtml(w.serial||'not entered')} • Photos: ${(w.photoFiles||[]).length} • Notes: ${escapeHtml(w.photos||'not entered')}</p><ul>${Object.entries(w.selectedParts||{}).map(([c,q])=>`<li>${c} ${labelFor(c)} x${q}</li>`).join('')||'<li>No parts selected.</li>'}</ul>${w.notes?`<p>${escapeHtml(w.notes)}</p>`:''}`; content.appendChild(block); });
   document.getElementById('emailDraft').value = buildEmailDraft();
 }
@@ -471,7 +528,7 @@ function pasteCopiedDoor(){
   showDoor();
   scrollToTop();
 }
-function handleClick(e){ const btn=e.target.closest('button'); if(!btn) return; if(btn.dataset.qtyPlus){ adjustPartQty(btn,1); return; } if(btn.dataset.qtyMinus){ adjustPartQty(btn,-1); return; } const a=btn.dataset.action; if(a==='newAudit') newAudit(); if(a==='continueAudit'){ const saved=loadLocal(); if(!saved) return alert('No saved prototype audit found yet.'); state.audit=saved; showAreas(); } if(a==='viewSubmitted'||a==='report'){ if(!state.audit) state.audit=loadLocal(); if(!state.audit) return alert('No saved prototype audit found yet.'); showReport(); } if(a==='settings'){ alert('Settings are placeholder-only in this prototype.'); } if(a==='editStoreInfo') editStoreInfo(); if(a==='deleteSection') deleteCurrentSection(); if(a==='deleteDoor') deleteCurrentDoor(); if(a==='saveStore') saveStore(); if(a==='selectArea') showAreaEntry(btn.dataset.area); if(a==='backAreas') showAreas(); if(a==='backToAreasPrompt') backToAreasPrompt(); if(a==='createRun') createRunFromForm(); if(a==='saveWalkin') saveWalkin(); if(a==='copyPrev') copyThisDoor(); if(a==='markGood') markDoorGood(); if(a==='flagUrgent') flagUrgent(); if(a==='saveNext'||a==='nextDoor') saveDoorAndNext(); if(a==='saveAudit') saveAuditOnly(); if(a==='prevDoor') prevDoor(); if(a==='currentDoor') currentDoor(); if(a==='copyThisDoor') copyThisDoor(); if(a==='pasteCopiedDoor') pasteCopiedDoor(); if(a==='sectionSummary'){ saveCurrentDoor(); showSummary(); } if(a==='addRun') showRun(getRun().area); if(a==='editDoor'){ state.currentDoorIndex=Number(btn.dataset.index); showDoor(); } if(a==='downloadEmail') downloadEmail(); if(a==='downloadDetailCsv') downloadAuditDetailCsv(); if(a==='downloadSummaryCsv') downloadPartsSummaryCsv(); if(a==='submitAudit') submitAudit(); if(a==='copyEmail') copyEmail(); if(a==='openEmail') openEmailDraft(); if(a==='showDatabase') showDatabaseOutline(); if(a==='startFreshAudit') startFreshAudit(); if(a==='continueEditing') continueEditing(); if(a==='deleteAudit') deleteCurrentAudit(); if(a==='resetDemo') resetDemo(); }
+function handleClick(e){ const btn=e.target.closest('button'); if(!btn) return; if(btn.dataset.qtyPlus){ adjustPartQty(btn,1); return; } if(btn.dataset.qtyMinus){ adjustPartQty(btn,-1); return; } const a=btn.dataset.action; if(a==='newAudit') newAudit(); if(a==='continueAudit'){ const saved=loadLocal(); if(!saved) return alert('No saved prototype audit found yet.'); state.audit=saved; ensureAuditShape(); showAreas(); } if(a==='viewSubmitted'||a==='report'){ if(!state.audit) state.audit=loadLocal(); if(!state.audit) return alert('No saved prototype audit found yet.'); showReport(); } if(a==='settings'){ alert('Settings are placeholder-only in this prototype.'); } if(a==='editStoreInfo') editStoreInfo(); if(a==='deleteSection') deleteCurrentSection(); if(a==='deleteDoor') deleteCurrentDoor(); if(a==='saveStore') saveStore(); if(a==='selectArea') showAreaEntry(btn.dataset.area); if(a==='backAreas') showAreas(); if(a==='backToAreasPrompt') backToAreasPrompt(); if(a==='createRun') createRunFromForm(); if(a==='saveCaseComponentsAudit') saveCaseComponentsAudit(); if(a==='deleteCaseComponentsAudit') deleteCaseComponentsAudit(); if(a==='saveWalkin') saveWalkin(); if(a==='copyPrev') copyThisDoor(); if(a==='markGood') markDoorGood(); if(a==='flagUrgent') flagUrgent(); if(a==='saveNext'||a==='nextDoor') saveDoorAndNext(); if(a==='saveAudit') saveAuditOnly(); if(a==='prevDoor') prevDoor(); if(a==='currentDoor') currentDoor(); if(a==='copyThisDoor') copyThisDoor(); if(a==='pasteCopiedDoor') pasteCopiedDoor(); if(a==='sectionSummary'){ saveCurrentDoor(); showSummary(); } if(a==='addRun') showRun(getRun().area); if(a==='editDoor'){ state.currentDoorIndex=Number(btn.dataset.index); showDoor(); } if(a==='downloadEmail') downloadEmail(); if(a==='downloadDetailCsv') downloadAuditDetailCsv(); if(a==='downloadSummaryCsv') downloadPartsSummaryCsv(); if(a==='submitAudit') submitAudit(); if(a==='copyEmail') copyEmail(); if(a==='openEmail') openEmailDraft(); if(a==='showDatabase') showDatabaseOutline(); if(a==='startFreshAudit') startFreshAudit(); if(a==='continueEditing') continueEditing(); if(a==='deleteAudit') deleteCurrentAudit(); if(a==='resetDemo') resetDemo(); }
 async function handleChange(e){ if(e.target.matches('input[type="file"]')){ await handlePhotoInput(e.target); return; } const run=getRun(); if(!run) return; const door=run.doors[state.currentDoorIndex]; if(!door) return; if(e.target.matches('[data-part-qty]')){ door.selectedParts=collectCheckedParts('partsCatalog'); door.status='Checked'; saveLocal(); } if(e.target.matches('[data-field]')){ door[e.target.dataset.field]=e.target.value; door.status='Checked'; updatePill(door); saveLocal(); } }
 
 
@@ -490,7 +547,7 @@ function adjustPartQty(btn, delta){
   }
 }
 function summarizeRun(run){ const complete=run.doors.filter(d=>d.status==='Checked').length; const good=run.doors.filter(d=>d.status==='Checked'&&!doorNeedsWork(d)).length; const needs=run.doors.filter(doorNeedsWork).length; const urgent=run.doors.filter(d=>d.urgency==='High'||d.urgency==='Food Safety Concern').length; return {complete,good,needs,urgent}; }
-function summarizeAudit(audit){ const totals={runs:audit.runs.length,doors:0,needs:0,urgent:0,photos:(audit.store?.photos||[]).length,parts:{}}; audit.runs.forEach(run=>{ totals.doors+=run.doors.length; totals.photos+=(run.photos||[]).length+(run.caseComponents?.photos||[]).length; run.doors.forEach(d=>{ totals.photos+=(d.photos||[]).length; if(doorNeedsWork(d)) totals.needs++; if(d.urgency==='High'||d.urgency==='Food Safety Concern') totals.urgent++; Object.entries(d.selectedParts||{}).forEach(([c,q])=>{ if(Number(q)>0) totals.parts[c]=(totals.parts[c]||0)+Number(q||0); }); }); Object.entries(run.caseComponents?.selectedParts||{}).forEach(([c,data])=>{ const n=parseFloat(data.qty)||1; totals.parts[c]=(totals.parts[c]||0)+n; totals.needs++; }); }); audit.walkins.forEach(w=>{ totals.photos+=(w.photoFiles||[]).length; Object.entries(w.selectedParts||{}).forEach(([c,q])=>{ if(Number(q)>0) totals.parts[c]=(totals.parts[c]||0)+Number(q||0); }); }); return totals; }
+function summarizeAudit(audit){ const totals={runs:audit.runs.length,doors:0,needs:0,urgent:0,photos:(audit.store?.photos||[]).length,parts:{}}; audit.runs.forEach(run=>{ totals.doors+=run.doors.length; totals.photos+=(run.photos||[]).length+(run.caseComponents?.photos||[]).length; run.doors.forEach(d=>{ totals.photos+=(d.photos||[]).length; if(doorNeedsWork(d)) totals.needs++; if(d.urgency==='High'||d.urgency==='Food Safety Concern') totals.urgent++; Object.entries(d.selectedParts||{}).forEach(([c,q])=>{ if(Number(q)>0) totals.parts[c]=(totals.parts[c]||0)+Number(q||0); }); }); Object.entries(run.caseComponents?.selectedParts||{}).forEach(([c,data])=>{ const n=parseFloat(data.qty)||1; totals.parts[c]=(totals.parts[c]||0)+n; totals.needs++; }); }); (audit.cases||[]).forEach(c=>{ totals.photos+=(c.photos||[]).length; Object.entries(c.selectedParts||{}).forEach(([code,data])=>{ const n=parseFloat(data.qty)||1; totals.parts[code]=(totals.parts[code]||0)+n; totals.needs++; }); }); audit.walkins.forEach(w=>{ totals.photos+=(w.photoFiles||[]).length; Object.entries(w.selectedParts||{}).forEach(([c,q])=>{ if(Number(q)>0) totals.parts[c]=(totals.parts[c]||0)+Number(q||0); }); }); return totals; }
 function doorNeedsWork(d){ return buildIssueList(d).length>0 || d.urgency==='High' || d.urgency==='Food Safety Concern'; }
 function buildIssueList(d){
   const inspection=[]; const parts=[];
@@ -539,6 +596,12 @@ function buildExportDetailRows(){
     Object.entries(run.caseComponents?.selectedParts||{}).forEach(([code,data])=>{
       const qty=parseFloat(data.qty)||1;
       rows.push({...base, Area:run.area||'', AssetType:'Case Component', Run:run.runCode||'', RunName:run.runName||'', Door:'', Brand:run.caseBrand||run.caseComponents?.brand||'', Model:run.caseComponents?.model||'', Serial:run.caseComponents?.serial||'', PartCode:code, PartName:labelFor(code), Qty:qty, Unit:(code==='T'||code==='HCB'||code==='HCW')?'Feet/Qty':'Qty', WidthSize:data.width||'', Color:data.color||'', HolePattern:data.hole||'', Notes:data.notes||'', PhotoNotes:run.caseComponents?.photoNotes||''});
+    });
+  });
+  (state.audit?.cases||[]).forEach(c=>{
+    Object.entries(c.selectedParts||{}).forEach(([code,data])=>{
+      const qty=parseFloat(data.qty)||1;
+      rows.push({...base, Area:'Case Components', AssetType:'Case Component', Run:c.code||'', RunName:c.name||'', Door:'', Brand:c.brand||'', Model:c.model||'', Serial:c.serial||'', PartCode:code, PartName:labelFor(code), Qty:qty, Unit:(code==='T'||code==='HCB'||code==='HCW')?'Feet/Qty':'Qty', WidthSize:data.width||'', Color:data.color||'', HolePattern:data.hole||'', Notes:data.notes||c.notes||'', PhotoNotes:c.photoNotes||''});
     });
   });
   (state.audit?.walkins||[]).forEach(w=>{
